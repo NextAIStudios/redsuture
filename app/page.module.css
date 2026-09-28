@@ -434,35 +434,55 @@
 }
 
 /* ==========================================================================
-   TICKER
+   TICKER (OVERLAP-SAFE WITH ISOLATED TRACK CONTAINER)
    ========================================================================== */
 .ticker {
   display: flex;
   align-items: center;
-  gap: 24px;
-  background: var(--bg-surface);
+  background: #0d0d0d;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: 12px 0;
+  height: 50px;
+  position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 .tickerLabel {
   flex-shrink: 0;
-  padding: 0 24px;
-  font-size: 0.7rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--red-bright);
-  border-right: 1px solid var(--border);
+  background: #0d0d0d;
+  border-right: 1px solid var(--border-bright);
+  z-index: 20;
+  position: relative;
+  box-shadow: 12px 0 24px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+
+.tickerTrackWrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
 }
 
 .tickerTrack {
   display: flex;
   gap: 48px;
-  animation: ticker 25s linear infinite;
+  animation: ticker 32s linear infinite;
   white-space: nowrap;
+  will-change: transform;
 }
 
 @keyframes ticker {
@@ -474,7 +494,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-secondary);
   font-family: 'JetBrains Mono', monospace;
@@ -574,11 +594,11 @@
 }
 
 /* ==========================================================================
-   ATTACK SURFACES
+   ATTACK SURFACES / TARGET ARCHITECTURES
    ========================================================================== */
 .surfacesGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
@@ -586,7 +606,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 30px;
+  padding: 26px;
   display: flex;
   flex-direction: column;
   transition: all 0.2s ease;
@@ -597,23 +617,32 @@
   background: var(--bg-elevated);
 }
 
-.surfaceScopeBadge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.surfaceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
 .surfaceTitle {
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   color: var(--text-primary);
-  margin-bottom: 10px;
+}
+
+.surfaceBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--red-bright);
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 .surfaceDesc {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 20px;
@@ -624,7 +653,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid var(--border);
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -684,6 +713,182 @@
 }
 
 /* ==========================================================================
+   AI MODELS ORCHESTRATION SHOWCASE
+   ========================================================================== */
+.modelsContainer {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.modelsLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modelsTitle {
+  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.modelsDesc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.modelsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.modelItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.modelItem strong {
+  color: var(--text-primary);
+}
+
+.modelDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red-bright);
+  margin-top: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--red-bright);
+}
+
+.modelsRight {
+  position: relative;
+}
+
+.agentGraphBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agentNode {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agentNode strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.agentNode span {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.agentTag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--red-bright);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.agentArrow {
+  text-align: center;
+  color: var(--red-dim);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.agentNodeHighlight {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid var(--red-dim);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agentNodeHighlight strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.agentNodeHighlight span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.agentTagHighlight {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--red-bright);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* ==========================================================================
+   DOWNLOADABLE FORMATS
+   ========================================================================== */
+.formatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.formatCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formatExt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--red-bright);
+  font-weight: 700;
+}
+
+.formatTitle {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.formatDesc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ==========================================================================
    SUTURE CODE DIFF SHOWCASE
    ========================================================================== */
 .diffContainer {
@@ -717,9 +922,9 @@
 }
 
 .diffBadge {
-  background: rgba(168, 85, 247, 0.15);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  color: #c084fc;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
   font-size: 0.7rem;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1135,6 +1340,16 @@
   .complianceGrid {
     grid-template-columns: repeat(3, 1fr);
   }
+  .surfacesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .formatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .modelsContainer {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
 }
 
 @media (max-width: 960px) {
@@ -1172,6 +1387,9 @@
   .featuresGrid {
     grid-template-columns: 1fr;
   }
+  .formatsGrid {
+    grid-template-columns: 1fr;
+  }
   .diffBody {
     grid-template-columns: 1fr;
   }
@@ -1195,5 +1413,9 @@
   }
   .metricDivider {
     display: none;
+  }
+  .tickerLabel {
+    padding: 0 16px;
+    font-size: 0.65rem;
   }
 }

