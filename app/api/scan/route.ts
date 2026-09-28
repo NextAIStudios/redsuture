@@ -9,10 +9,24 @@ const RUNS_DIR = path.join(process.cwd(), 'strix_runs');
 
 export async function POST(request: Request) {
   try {
-    const { target, mode = 'quick', llm = 'anthropic/claude-sonnet-4-6', instructions } = await request.json();
+    const {
+      target,
+      targets,
+      targetType = 'url',
+      mode = 'quick',
+      llm = 'anthropic/claude-sonnet-4-6',
+      instructions
+    } = await request.json();
 
-    if (!target) {
-      return NextResponse.json({ error: 'Target URL is required' }, { status: 400 });
+    const finalTargets: string[] = [];
+    if (Array.isArray(targets) && targets.length > 0) {
+      finalTargets.push(...targets.filter((t: string) => Boolean(t && t.trim())));
+    } else if (target && typeof target === 'string') {
+      finalTargets.push(target.trim());
+    }
+
+    if (finalTargets.length === 0) {
+      return NextResponse.json({ error: 'At least one target (URL, Repo, Directory, or Target list) is required' }, { status: 400 });
     }
 
     // Ensure runs directory exists
@@ -20,16 +34,38 @@ export async function POST(request: Request) {
       fs.mkdirSync(RUNS_DIR, { recursive: true });
     }
 
-    // Generate a unique run name
-    const hostname = new URL(target).hostname.replace(/\./g, '-');
-    const runId = `${hostname}_${Date.now().toString(36)}`;
+    // Generate a safe unique run name based on first target
+    let primaryHost = 'scan';
+    try {
+      if (finalTargets[0].startsWith('http://') || finalTargets[0].startsWith('https://')) {
+        primaryHost = new URL(finalTargets[0]).hostname.replace(/[^a-zA-Z0-9-]/g, '-');
+      } else {
+        primaryHost = path.basename(finalTargets[0]).replace(/[^a-zA-Z0-9-]/g, '-');
+      }
+    } catch {
+      primaryHost = 'target';
+    }
 
-    const args = [
-      '--target', target,
+    const runId = `${primaryHost || 'target'}_${Date.now().toString(36)}`;
+    const runOutput = path.join(RUNS_DIR, runId);
+
+    const args: string[] = [];
+
+    if (targetType === 'list') {
+      // Targets list file
+      args.push('--target-list', finalTargets[0]);
+    } else {
+      // Support single or multiple -t / --target inputs (for whitebox or multiple target types)
+      finalTargets.forEach(t => {
+        args.push('--target', t);
+      });
+    }
+
+    args.push(
       '--scan-mode', mode,
-      '--output', path.join(RUNS_DIR, runId),
-      '-n', // non-interactive
-    ];
+      '--output', runOutput,
+      '-n', // non-interactive mode
+    );
 
     if (instructions) {
       args.push('--instructions', instructions);
@@ -56,7 +92,9 @@ export async function POST(request: Request) {
     const metaPath = path.join(RUNS_DIR, `${runId}.meta.json`);
     fs.writeFileSync(metaPath, JSON.stringify({
       runId,
-      target,
+      target: finalTargets.join(', '),
+      targets: finalTargets,
+      targetType,
       mode,
       llm,
       pid: child.pid,
@@ -64,7 +102,7 @@ export async function POST(request: Request) {
       status: 'running',
     }));
 
-    return NextResponse.json({ runId, pid: child.pid, status: 'running' });
+    return NextResponse.json({ runId, pid: child.pid, status: 'running', targets: finalTargets });
   } catch (err: any) {
     console.error('[scan/start]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

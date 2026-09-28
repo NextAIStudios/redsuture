@@ -79,13 +79,34 @@ const SCAN_PHASES = [
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'new-scan' | 'history' | 'findings'>('overview');
-  const [scanTarget, setScanTarget] = useState('');
-  const [scanType, setScanType] = useState<'url' | 'repo' | 'api'>('url');
+  const [scanType, setScanType] = useState<'live-url' | 'github-repo' | 'local-dir' | 'whitebox' | 'target-list'>('live-url');
+  
+  // Target inputs
+  const [targetUrl, setTargetUrl] = useState('');
+  const [targetRepo, setTargetRepo] = useState('');
+  const [targetDir, setTargetDir] = useState('./my-app');
+  const [whiteboxRepo, setWhiteboxRepo] = useState('https://github.com/org/repo');
+  const [whiteboxUrl, setWhiteboxUrl] = useState('https://your-app.com');
+  const [targetListContent, setTargetListContent] = useState('');
+  const [scanMode, setScanMode] = useState<'quick' | 'standard' | 'deep'>('quick');
+  const [instructions, setInstructions] = useState('');
+
+  // GitHub PR Integration
+  const [githubRepoUrl, setGithubRepoUrl] = useState('https://github.com/acme-corp/api-gateway');
+  const [githubTargetBranch, setGithubTargetBranch] = useState('main');
+  const [autoPrEnabled, setAutoPrEnabled] = useState(true);
+  const [prStatuses, setPrStatuses] = useState<Record<string, { status: 'idle' | 'pushing' | 'created'; prUrl?: string; prNumber?: number; branch?: string }>>({});
+  const [generatedPatches, setGeneratedPatches] = useState<Record<string, string>>({
+    v1: `--- a/src/controllers/userController.ts\n+++ b/src/controllers/userController.ts\n@@ -12,4 +12,4 @@\n- const user = await db.raw("SELECT * FROM users WHERE id = '" + req.query.id + "'");\n+ const user = await db('users').where({ id: req.query.id }).first();`,
+    v2: `--- a/src/components/CommentView.tsx\n+++ b/src/components/CommentView.tsx\n@@ -8,3 +8,3 @@\n- <div dangerouslySetInnerHTML={{ __html: comment.body }} />\n+ <div>{DOMPurify.sanitize(comment.body)}</div>`,
+    v3: `--- a/src/middleware/auth.ts\n+++ b/src/middleware/auth.ts\n@@ -15,4 +15,4 @@\n- const decoded = jwt.decode(token, { algorithms: ['HS256', 'none'] });\n+ const decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['RS256'] });`,
+  });
+
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
     status: 'idle', phase: '', progress: 0, messages: [], findings: 0, tokens: 0,
   });
   const [selectedScan, setSelectedScan] = useState(MOCK_SCANS[0]);
-  const [selectedVuln, setSelectedVuln] = useState<typeof MOCK_VULNS[0] | null>(null);
+  const [selectedVuln, setSelectedVuln] = useState<typeof MOCK_VULNS[0] | null>(MOCK_VULNS[0]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -119,16 +140,47 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const getActiveTargets = (): { targets: string[]; targetType: string } => {
+    if (scanType === 'live-url') return { targets: [targetUrl.trim()], targetType: 'url' };
+    if (scanType === 'github-repo') return { targets: [targetRepo.trim()], targetType: 'repo' };
+    if (scanType === 'local-dir') return { targets: [targetDir.trim()], targetType: 'dir' };
+    if (scanType === 'whitebox') return { targets: [whiteboxRepo.trim(), whiteboxUrl.trim()].filter(Boolean), targetType: 'whitebox' };
+    if (scanType === 'target-list') {
+      const lines = targetListContent.split('\n').map(l => l.trim()).filter(l => Boolean(l && !l.startsWith('#')));
+      return { targets: lines, targetType: 'list' };
+    }
+    return { targets: [], targetType: 'url' };
+  };
+
   const startScan = async () => {
-    if (!scanTarget || scanProgress.status === 'running') return;
-    setScanProgress({ status: 'running', phase: 'Launching Strix agents...', progress: 5, messages: [], findings: 0, tokens: 0 });
+    const { targets, targetType } = getActiveTargets();
+    if (targets.length === 0 || scanProgress.status === 'running') return;
+
+    setScanProgress({
+      status: 'running',
+      phase: 'Launching Strix autonomous agents...',
+      progress: 5,
+      messages: [
+        `[CONFIG] Target Architecture: ${targetType.toUpperCase()}`,
+        `[CONFIG] Scope: ${targets.join(', ')}`,
+        `[GITHUB] Auto-PR Destination: ${githubRepoUrl} (${githubTargetBranch})`,
+        `[AGENT] Initializing sandbox & LLM orchestrator...`,
+      ],
+      findings: 0,
+      tokens: 0,
+    });
     setActiveTab('overview');
 
     try {
       const res = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target: scanTarget, mode: 'quick' }),
+        body: JSON.stringify({
+          targets,
+          targetType,
+          mode: scanMode,
+          instructions: instructions || undefined,
+        }),
       });
       const data = await res.json();
 
@@ -142,6 +194,39 @@ export default function DashboardPage() {
       pollRef.current = setInterval(() => pollScan(data.runId), 5000);
     } catch (e: any) {
       setScanProgress(prev => ({ ...prev, status: 'error', phase: `Failed: ${e.message}` }));
+    }
+  };
+
+  const handlePushToGithub = async (vuln: typeof MOCK_VULNS[0]) => {
+    setPrStatuses(prev => ({ ...prev, [vuln.id]: { status: 'pushing' } }));
+    
+    try {
+      const patch = generatedPatches[vuln.id] || `// SutureEngine auto-fix for ${vuln.title}\n// Enforced strict type sanitization & boundary checking`;
+      const res = await fetch('/api/github/pr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repoUrl: githubRepoUrl,
+          targetBranch: githubTargetBranch,
+          vulnId: vuln.id,
+          vulnTitle: vuln.title,
+          patchDiff: patch,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPrStatuses(prev => ({
+          ...prev,
+          [vuln.id]: {
+            status: 'created',
+            prUrl: data.prUrl,
+            prNumber: data.prNumber,
+            branch: data.branch,
+          },
+        }));
+      }
+    } catch (err) {
+      setPrStatuses(prev => ({ ...prev, [vuln.id]: { status: 'idle' } }));
     }
   };
 
@@ -330,59 +415,185 @@ export default function DashboardPage() {
           {activeTab === 'new-scan' && (
             <div className={styles.newScan}>
               <div className={styles.scanForm}>
-                <div className={styles.scanTypeGrid}>
+                <div className={styles.targetTypeHeader}>
+                  <h2 className={styles.formSectionTitle}>Select Target Architecture</h2>
+                  <p className={styles.formSectionDesc}>RedSuture supports five Strix autonomous ingestion modes for multi-surface penetration testing.</p>
+                </div>
+
+                <div className={styles.targetGrid}>
                   {[
-                    { id: 'url', icon: '🌐', label: 'Web App', desc: 'Scan a live URL' },
-                    { id: 'repo', icon: '📦', label: 'Repository', desc: 'GitHub / GitLab URL' },
-                    { id: 'api', icon: '⚡', label: 'API / OpenAPI', desc: 'Swagger / Postman spec' },
+                    {
+                      id: 'live-url',
+                      label: 'Live Web Application',
+                      badge: 'Black-box / DAST',
+                      desc: 'Scan production or staging URLs, SPAs, and client-side web apps.',
+                      example: 'strix --target https://your-app.com',
+                    },
+                    {
+                      id: 'github-repo',
+                      label: 'GitHub / GitLab Repo',
+                      badge: 'Source Code / SAST+DAST',
+                      desc: 'Scan remote Git repositories, pull requests, and backend logic.',
+                      example: 'strix --target https://github.com/org/repo',
+                    },
+                    {
+                      id: 'local-dir',
+                      label: 'Local Codebase Directory',
+                      badge: 'Local Workspace',
+                      desc: 'Run Strix agents directly against local application directories.',
+                      example: 'strix --target ./app-directory',
+                    },
+                    {
+                      id: 'whitebox',
+                      label: 'White-Box Multi-Target',
+                      badge: 'Source + Live URL',
+                      desc: 'Correlate live running web endpoints with repository source code.',
+                      example: 'strix -t https://github.com/org/repo -t https://your-app.com',
+                    },
+                    {
+                      id: 'target-list',
+                      label: 'Bulk Target List',
+                      badge: 'Enterprise Scope List',
+                      desc: 'Batch scan multiple hosts, APIs, and microservices from a list.',
+                      example: 'strix --target-list ./targets.txt',
+                    },
                   ].map(t => (
                     <button
                       key={t.id}
-                      className={`${styles.scanTypeCard} ${scanType === t.id ? styles.scanTypeCardActive : ''}`}
+                      type="button"
+                      className={`${styles.targetCard} ${scanType === t.id ? styles.targetCardActive : ''}`}
                       onClick={() => setScanType(t.id as typeof scanType)}
                     >
-                      <span className={styles.scanTypeIcon}>{t.icon}</span>
-                      <span className={styles.scanTypeLabel}>{t.label}</span>
-                      <span className={styles.scanTypeDesc}>{t.desc}</span>
+                      <div className={styles.targetCardHeader}>
+                        <span className={styles.targetCardLabel}>{t.label}</span>
+                        <span className={styles.targetCardBadge}>{t.badge}</span>
+                      </div>
+                      <span className={styles.targetCardDesc}>{t.desc}</span>
+                      <code className={styles.targetCardCmd}>{t.example}</code>
                     </button>
                   ))}
                 </div>
 
-                <div className={styles.targetInput}>
-                  <label className={styles.inputLabel}>
-                    {scanType === 'url' ? 'Target URL' : scanType === 'repo' ? 'Repository URL' : 'API Spec URL or File'}
-                  </label>
-                  <div className={styles.inputWrap}>
-                    <input
-                      type="text"
-                      className={styles.targetField}
-                      placeholder={
-                        scanType === 'url' ? 'https://your-app.com' :
-                        scanType === 'repo' ? 'https://github.com/org/repo' :
-                        'https://api.your-app.com/openapi.json'
-                      }
-                      value={scanTarget}
-                      onChange={e => setScanTarget(e.target.value)}
-                    />
-                  </div>
+                {/* DYNAMIC INPUTS BASED ON SELECTED TARGET TYPE */}
+                <div className={styles.targetInputContainer}>
+                  {scanType === 'live-url' && (
+                    <div className={styles.targetInputGroup}>
+                      <label className={styles.inputLabel}>
+                        Live Application Endpoint
+                        <span className={styles.inputHint}>Full HTTP/HTTPS address to target</span>
+                      </label>
+                      <input
+                        type="url"
+                        className={styles.targetField}
+                        placeholder="https://app.enterprise-demo.io"
+                        value={targetUrl}
+                        onChange={e => setTargetUrl(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {scanType === 'github-repo' && (
+                    <div className={styles.targetInputGroup}>
+                      <label className={styles.inputLabel}>
+                        Remote Repository URL
+                        <span className={styles.inputHint}>GitHub, GitLab, or Bitbucket HTTPS repository link</span>
+                      </label>
+                      <input
+                        type="url"
+                        className={styles.targetField}
+                        placeholder="https://github.com/acme-corp/payment-service"
+                        value={targetRepo}
+                        onChange={e => setTargetRepo(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {scanType === 'local-dir' && (
+                    <div className={styles.targetInputGroup}>
+                      <label className={styles.inputLabel}>
+                        Local Application Path
+                        <span className={styles.inputHint}>Relative or absolute path mounted in runner sandbox</span>
+                      </label>
+                      <input
+                        type="text"
+                        className={styles.targetField}
+                        placeholder="./packages/api-server"
+                        value={targetDir}
+                        onChange={e => setTargetDir(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {scanType === 'whitebox' && (
+                    <div className={styles.whiteboxGrid}>
+                      <div className={styles.targetInputGroup}>
+                        <label className={styles.inputLabel}>
+                          1. Source Repository
+                          <span className={styles.inputHint}>Codebase for taint &amp; logic analysis</span>
+                        </label>
+                        <input
+                          type="url"
+                          className={styles.targetField}
+                          placeholder="https://github.com/acme/auth-api"
+                          value={whiteboxRepo}
+                          onChange={e => setWhiteboxRepo(e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.targetInputGroup}>
+                        <label className={styles.inputLabel}>
+                          2. Live Target URL
+                          <span className={styles.inputHint}>Live running application to execute PoC</span>
+                        </label>
+                        <input
+                          type="url"
+                          className={styles.targetField}
+                          placeholder="https://staging.acme.com"
+                          value={whiteboxUrl}
+                          onChange={e => setWhiteboxUrl(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {scanType === 'target-list' && (
+                    <div className={styles.targetInputGroup}>
+                      <label className={styles.inputLabel}>
+                        Target List Entries
+                        <span className={styles.inputHint}>One target per non-empty line (URLs, repos, or hostnames)</span>
+                      </label>
+                      <textarea
+                        className={styles.targetListArea}
+                        rows={6}
+                        placeholder={`https://api.acme.com\nhttps://auth.acme.com\nhttps://github.com/acme/billing\n# Internal QA domain\nhttps://qa-cluster.acme.internal`}
+                        value={targetListContent}
+                        onChange={e => setTargetListContent(e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.optionsGrid}>
                   <div className={styles.optionCard}>
                     <div className={styles.optionHeader}>
-                      <span className={styles.optionLabel}>Scan Mode</span>
-                      <span className="badge badge-green">Cost Optimized</span>
+                      <span className={styles.optionLabel}>Scan Depth Mode</span>
+                      <span className={styles.modeBadge}>{scanMode.toUpperCase()}</span>
                     </div>
                     <div className={styles.radioGroup}>
                       {[
-                        { value: 'quick', label: 'Quick', desc: '~5 min · Low cost', recommended: true },
-                        { value: 'standard', label: 'Standard', desc: '~15 min · Medium cost', recommended: false },
-                        { value: 'deep', label: 'Deep', desc: '~45 min · Higher cost', recommended: false },
+                        { value: 'quick', label: 'Quick Scan', desc: 'Standard OWASP surface & rapid fuzzing (~5m)' },
+                        { value: 'standard', label: 'Standard Pentest', desc: 'Full authentication, injection & API mapping (~15m)' },
+                        { value: 'deep', label: 'Deep Autonomous Audit', desc: 'Complex multi-step exploit chains & whitebox analysis (~45m)' },
                       ].map(opt => (
                         <label key={opt.value} className={styles.radioLabel}>
-                          <input type="radio" name="mode" defaultChecked={opt.recommended} className={styles.radio} />
+                          <input
+                            type="radio"
+                            name="mode"
+                            checked={scanMode === opt.value}
+                            onChange={() => setScanMode(opt.value as typeof scanMode)}
+                            className={styles.radio}
+                          />
                           <div className={styles.radioContent}>
-                            <span className={styles.radioTitle}>{opt.label} {opt.recommended && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>Recommended</span>}</span>
+                            <span className={styles.radioTitle}>{opt.label}</span>
                             <span className={styles.radioDesc}>{opt.desc}</span>
                           </div>
                         </label>
@@ -392,29 +603,61 @@ export default function DashboardPage() {
 
                   <div className={styles.optionCard}>
                     <div className={styles.optionHeader}>
-                      <span className={styles.optionLabel}>Instructions (optional)</span>
+                      <span className={styles.optionLabel}>GitHub PR Remediation Destination</span>
+                      <span className={styles.githubBadge}>Auto-PR Ready</span>
                     </div>
-                    <textarea
-                      className={styles.instructionField}
-                      placeholder={'Focus on authentication flows.\nTest as admin user with credentials: admin@test.com / test123'}
-                      rows={5}
-                    />
+                    <div className={styles.githubFormGroup}>
+                      <div className={styles.subInputWrap}>
+                        <label className={styles.subLabel}>Target Repository for Auto-PRs</label>
+                        <input
+                          type="text"
+                          className={styles.subInput}
+                          placeholder="https://github.com/client-org/backend-service"
+                          value={githubRepoUrl}
+                          onChange={e => setGithubRepoUrl(e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.subInputWrap}>
+                        <label className={styles.subLabel}>Base Branch</label>
+                        <input
+                          type="text"
+                          className={styles.subInput}
+                          placeholder="main"
+                          value={githubTargetBranch}
+                          onChange={e => setGithubTargetBranch(e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                <div className={styles.optionCard} style={{ width: '100%' }}>
+                  <div className={styles.optionHeader}>
+                    <span className={styles.optionLabel}>Custom Agent Directives (Optional)</span>
+                    <span className={styles.inputHint}>Tailor attack scope or credentials</span>
+                  </div>
+                  <textarea
+                    className={styles.instructionField}
+                    placeholder={'Focus on OAuth tokens and BOLA parameter tampering on /api/v2 endpoints.\nSimulate standard role vs admin escalation.'}
+                    value={instructions}
+                    onChange={e => setInstructions(e.target.value)}
+                    rows={4}
+                  />
                 </div>
 
                 <div className={styles.scanActions}>
                   <div className={styles.costEstimate}>
-                    <span>⚡ Estimated cost:</span>
-                    <span className={styles.costAmount}>~$0.15 – $0.50</span>
-                    <span className={styles.costNote}>(deducted from your plan)</span>
+                    <span>Target Type:</span>
+                    <span className={styles.costAmount}>{scanType.toUpperCase()}</span>
+                    <span className={styles.costNote}>— Auto-fix PRs target {githubRepoUrl.replace('https://github.com/', '')}</span>
                   </div>
                   <button
                     className="btn-primary"
                     onClick={startScan}
-                    disabled={!scanTarget || scanProgress.status === 'running'}
-                    style={{ padding: '14px 32px', fontSize: '1rem' }}
+                    disabled={scanProgress.status === 'running'}
+                    style={{ padding: '14px 32px', fontSize: '0.95rem' }}
                   >
-                    {scanProgress.status === 'running' ? '⟳ Scan Running...' : '🚀 Launch Scan'}
+                    {scanProgress.status === 'running' ? 'Scan In Progress...' : 'Launch Strix Managed Scan'}
                   </button>
                 </div>
               </div>
@@ -427,7 +670,7 @@ export default function DashboardPage() {
               <div className={styles.findingsHeader}>
                 <div className={styles.findingsMeta}>
                   <span className={styles.findingsTarget}>{selectedScan.target}</span>
-                  <span className={styles.findingsDate}>{selectedScan.date}</span>
+                  <span className={styles.findingsDate}>{selectedScan.date} · Strix AI Managed Pentest</span>
                 </div>
                 <div className={styles.findingsBadges}>
                   <span className="badge badge-red">{selectedScan.critical} Critical</span>
@@ -451,15 +694,20 @@ export default function DashboardPage() {
                       className={`${styles.vulnCard} ${selectedVuln?.id === v.id ? styles.vulnCardSelected : ''}`}
                       onClick={() => setSelectedVuln(v)}
                     >
-                      <div className={`badge ${severityBadge(v.severity)}`} style={{ fontSize: '0.7rem' }}>
-                        {v.severity}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div className={`badge ${severityBadge(v.severity)}`} style={{ fontSize: '0.7rem' }}>
+                          {v.severity.toUpperCase()}
+                        </div>
+                        {prStatuses[v.id]?.status === 'created' && (
+                          <span className={styles.prBadge}>PR #{prStatuses[v.id]?.prNumber}</span>
+                        )}
                       </div>
                       <div className={styles.vulnTitle}>{v.title}</div>
                       <div className={styles.vulnMeta}>
                         <span className={styles.vulnEndpoint}>{v.endpoint}</span>
                         <span className={styles.cvssScore}>CVSS {v.cvss}</span>
                       </div>
-                      {v.status === 'fixed' && <span className="badge badge-green" style={{ fontSize: '0.65rem', marginTop: '4px' }}>✓ Fixed</span>}
+                      {v.status === 'fixed' && <span className="badge badge-green" style={{ fontSize: '0.65rem', marginTop: '4px' }}>Remediated</span>}
                     </div>
                   ))}
                 </div>
@@ -467,55 +715,97 @@ export default function DashboardPage() {
                 {selectedVuln ? (
                   <div className={styles.vulnDetail}>
                     <div className={styles.vulnDetailHeader}>
-                      <div className="badge badge-red" style={{ fontSize: '0.75rem' }}>{selectedVuln.severity} · CVSS {selectedVuln.cvss}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div className="badge badge-red" style={{ fontSize: '0.75rem' }}>{selectedVuln.severity.toUpperCase()} · CVSS {selectedVuln.cvss}</div>
+                        {prStatuses[selectedVuln.id]?.status === 'created' && (
+                          <a
+                            href={prStatuses[selectedVuln.id]?.prUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.prLinkBadge}
+                          >
+                            GitHub PR #{prStatuses[selectedVuln.id]?.prNumber} Opened ↗
+                          </a>
+                        )}
+                      </div>
                       <h2 className={styles.vulnDetailTitle}>{selectedVuln.title}</h2>
                       <div className={styles.vulnDetailMeta}>
-                        <span>Type: {selectedVuln.type}</span>
-                        <span>Endpoint: <code className={styles.code}>{selectedVuln.endpoint}</code></span>
+                        <span>Vulnerability Category: {selectedVuln.type}</span>
+                        <span>Target Handler / Endpoint: <code className={styles.code}>{selectedVuln.endpoint}</code></span>
                       </div>
                     </div>
 
+                    {prStatuses[selectedVuln.id]?.status === 'created' && (
+                      <div className={styles.prSuccessBanner}>
+                        <div className={styles.prSuccessHeader}>
+                          <span className={styles.prCheckIcon}>✓</span>
+                          <strong>Remediation Pull Request Successfully Pushed to GitHub!</strong>
+                        </div>
+                        <p className={styles.prSuccessText}>
+                          Branch <code>{prStatuses[selectedVuln.id]?.branch}</code> was pushed to <code>{githubRepoUrl}</code>.
+                        </p>
+                        <a
+                          href={prStatuses[selectedVuln.id]?.prUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary"
+                          style={{ fontSize: '0.82rem', padding: '6px 14px', width: 'fit-content' }}
+                        >
+                          Review &amp; Merge PR on GitHub ↗
+                        </a>
+                      </div>
+                    )}
+
                     <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>⚠ Proof of Concept</h3>
+                      <h3 className={styles.vulnSectionTitle}>Verified Proof-of-Concept Exploit</h3>
                       <div className={styles.pocBox}>
                         <code>{selectedVuln.poc}</code>
                       </div>
                     </div>
 
                     <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>📋 Description</h3>
+                      <h3 className={styles.vulnSectionTitle}>Technical Impact &amp; Findings Description</h3>
                       <p className={styles.vulnDesc}>
-                        This vulnerability allows an attacker to manipulate the <code className={styles.code}>{selectedVuln.endpoint}</code> endpoint
-                        to gain unauthorized access or extract sensitive data. The AI pentest agent confirmed this finding
-                        with a working exploit that produced a valid proof-of-concept.
+                        The autonomous Strix pentest agent confirmed this exploit vector by actively bypassing validation on <code className={styles.code}>{selectedVuln.endpoint}</code> in an isolated runtime sandbox. No false positives—finding is fully reproducible.
                       </p>
                     </div>
 
                     <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>🩹 Recommended Fix</h3>
-                      <div className={styles.fixBox}>
-                        <p>1. Implement parameterized queries / input sanitization</p>
-                        <p>2. Apply principle of least privilege</p>
-                        <p>3. Add proper authentication checks before processing input</p>
-                        <p>4. Enable WAF rules for this endpoint</p>
+                      <h3 className={styles.vulnSectionTitle}>SutureEngine Generated Code Patch</h3>
+                      <div className={styles.patchDiffBox}>
+                        <pre className={styles.patchPre}>
+                          {generatedPatches[selectedVuln.id] || `// SutureEngine auto-fix for ${selectedVuln.title}\n// Enforce strict authorization checks & parameterized query`}
+                        </pre>
                       </div>
                     </div>
 
                     <div className={styles.vulnActions}>
-                      <button className="btn-primary" style={{ fontSize: '0.875rem' }}>
-                        ✨ Generate Fix (AI Patch)
+                      <button
+                        className="btn-primary"
+                        onClick={() => handlePushToGithub(selectedVuln)}
+                        disabled={prStatuses[selectedVuln.id]?.status === 'pushing'}
+                        style={{ fontSize: '0.875rem' }}
+                      >
+                        {prStatuses[selectedVuln.id]?.status === 'pushing'
+                          ? 'Pushing Branch to GitHub...'
+                          : prStatuses[selectedVuln.id]?.status === 'created'
+                          ? 'Push Updated PR to GitHub'
+                          : 'Push Fix to GitHub (Create PR)'}
                       </button>
-                      <button className="btn-secondary" style={{ fontSize: '0.875rem' }}>
-                        📋 Copy Report
-                      </button>
-                      <button className="btn-ghost" style={{ fontSize: '0.875rem' }}>
-                        ✓ Mark as Fixed
+                      <button
+                        className="btn-secondary"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(generatedPatches[selectedVuln.id] || '');
+                          alert('Patch diff copied to clipboard!');
+                        }}
+                        style={{ fontSize: '0.875rem' }}
+                      >
+                        Copy Patch Diff
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className={styles.vulnDetailEmpty}>
-                    <span className={styles.emptyIcon}>⚠</span>
                     <p>Select a vulnerability to view details</p>
                   </div>
                 )}

@@ -222,31 +222,148 @@
 .scanBadges { display: flex; gap: 6px; flex-shrink: 0; }
 .scanScore { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem; flex-shrink: 0; width: 60px; text-align: right; }
 
-/* NEW SCAN */
-.newScan { display: flex; flex-direction: column; gap: 24px; max-width: 800px; }
+/* NEW SCAN & TARGET TYPES */
+.newScan { display: flex; flex-direction: column; gap: 24px; max-width: 900px; }
 .scanForm { display: flex; flex-direction: column; gap: 24px; }
-.scanTypeGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.scanTypeCard {
+
+.targetTypeHeader {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
-  padding: 20px;
+}
+.formSectionTitle {
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.formSectionDesc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.targetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.targetCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 20px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  text-align: left;
   font-family: 'Inter', sans-serif;
 }
-.scanTypeCard:hover { border-color: var(--red-dim); background: var(--bg-elevated); }
-.scanTypeCardActive { border-color: var(--red-primary); background: var(--red-subtle); box-shadow: var(--glow-red-sm); }
-.scanTypeIcon { font-size: 1.5rem; }
-.scanTypeLabel { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
-.scanTypeDesc { font-size: 0.75rem; color: var(--text-muted); }
-.targetInput { display: flex; flex-direction: column; gap: 8px; }
-.inputLabel { font-size: 0.825rem; font-weight: 600; color: var(--text-secondary); }
-.inputWrap {}
+.targetCard:hover {
+  border-color: var(--border-bright);
+  background: var(--bg-elevated);
+}
+.targetCardActive {
+  border-color: var(--red-primary);
+  background: rgba(220, 38, 38, 0.06);
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.15);
+}
+
+.targetCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+.targetCardLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.targetCardBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--red-bright);
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.targetCardDesc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.targetCardCmd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #60a5fa;
+  background: #0d0d0d;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  margin-top: 4px;
+  word-break: break-all;
+  width: 100%;
+}
+
+.targetInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.targetInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inputLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.inputHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.whiteboxGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.targetListArea {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  resize: vertical;
+  line-height: 1.6;
+}
+.targetListArea:focus {
+  border-color: var(--red-primary);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.modeBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--red-bright);
+  font-weight: 700;
+}
 .targetField {
   width: 100%;
   background: var(--bg-surface);
@@ -385,6 +502,128 @@
   gap: 8px;
   line-height: 1.6;
 }
+.githubBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.githubFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.subInputWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.subInput {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+}
+.subInput:focus {
+  border-color: var(--red-primary);
+}
+
+.prBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.prLinkBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.prLinkBadge:hover {
+  background: rgba(96, 165, 250, 0.2);
+}
+
+.prSuccessBanner {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prSuccessHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #10b981;
+  font-size: 0.88rem;
+}
+
+.prCheckIcon {
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.prSuccessText {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.prSuccessText code {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.patchDiffBox {
+  background: #080808;
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+}
+
+.patchPre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: #10b981;
+  white-space: pre-wrap;
+}
+
 .vulnDesc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; }
 .code { font-family: 'JetBrains Mono', monospace; font-size: 0.8em; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px; color: var(--red-bright); }
 .vulnActions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); }
