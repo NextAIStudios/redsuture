@@ -38,9 +38,9 @@ function tailLog(logPath: string, lines = 50): string[] {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { runId: string } }
+  context: { params: Promise<{ runId: string }> }
 ) {
-  const { runId } = params;
+  const { runId } = await context.params;
   const metaPath = path.join(RUNS_DIR, `${runId}.meta.json`);
   const runDir = path.join(RUNS_DIR, runId);
 
