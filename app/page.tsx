@@ -2,915 +2,669 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
+import Logo from './components/Logo';
+import {
+  ShieldIcon, CodeIcon, GitIcon, GaugeIcon, FileCheckIcon, GlobeIcon, LayersIcon,
+  FolderIcon, ApiIcon, ListIcon, CheckIcon, ArrowRightIcon, PlusIcon,
+} from './components/icons';
 
-const THREAT_VECTORS = [
-  'Broken Object Level Auth (BOLA)',
-  'SQL & NoSQL Injection Vectors',
-  'Server-Side Request Forgery (SSRF)',
-  'JWT & Cryptographic Flaws',
-  'GraphQL Introspection & Over-fetching',
-  'Privilege Escalation Chains',
-  'Remote Code Execution (RCE)',
-  'Cross-Site Scripting (XSS)',
-  'API Rate-Limit & Logic Bypass',
-  'CI/CD Pipeline Dependency Poisoning'
+const NAV_LINKS = [
+  { href: '#how-it-works', label: 'How it works' },
+  { href: '#platform', label: 'Platform' },
+  { href: '#coverage', label: 'Coverage' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#faq', label: 'FAQ' },
 ];
-
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  );
-}
-
-function TerminalIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="4 17 10 11 4 5" />
-      <line x1="12" y1="19" x2="20" y2="19" />
-    </svg>
-  );
-}
-
-function CodeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
-    </svg>
-  );
-}
-
-function DownloadIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function CpuIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <rect x="9" y="9" width="6" height="6" />
-      <line x1="9" y1="1" x2="9" y2="4" />
-      <line x1="15" y1="1" x2="15" y2="4" />
-      <line x1="9" y1="20" x2="9" y2="23" />
-      <line x1="15" y1="20" x2="15" y2="23" />
-      <line x1="20" y1="9" x2="23" y2="9" />
-      <line x1="20" y1="14" x2="23" y2="14" />
-      <line x1="1" y1="9" x2="4" y2="9" />
-      <line x1="1" y1="14" x2="4" y2="14" />
-    </svg>
-  );
-}
-
-function FileCheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <path d="m9 15 2 2 4-4" />
-    </svg>
-  );
-}
-
-function ServerIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-      <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-      <line x1="6" y1="6" x2="6.01" y2="6" />
-      <line x1="6" y1="18" x2="6.01" y2="18" />
-    </svg>
-  );
-}
-
-function LockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function CheckmarkIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
-  );
-}
 
 function NavBar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 30);
-    window.addEventListener('scroll', onScroll);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const close = () => setMenuOpen(false);
+
   return (
-    <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
+    <header className={`${styles.nav} ${scrolled || menuOpen ? styles.navScrolled : ''} ${menuOpen ? styles.navOpen : ''}`}>
       <div className={`container ${styles.navInner}`}>
-        <Link href="/" className={styles.logo} onClick={() => setMenuOpen(false)}>
-          <div className={styles.logoBadge}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <span className={styles.logoText}>RedSuture</span>
+        <Link href="/" onClick={close} aria-label="RedSuture home">
+          <Logo />
         </Link>
-        <div className={styles.navLinks}>
-          <a href="#platform">Platform</a>
-          <a href="#surfaces">Target Architectures</a>
-          <a href="#remediation">Remediation Guides</a>
-          <a href="#models">AI Engine</a>
-          <a href="#compliance">Compliance</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#faq">Enterprise FAQ</a>
-        </div>
+        <nav className={styles.navLinks} aria-label="Primary">
+          {NAV_LINKS.map(l => <a key={l.href} href={l.href}>{l.label}</a>)}
+        </nav>
         <div className={styles.navActions}>
-          <Link href="/auth" className="btn-ghost">Sign In</Link>
-          <Link href="/auth?mode=signup" className="btn-primary">
-            Request Managed Scan
-            <ArrowRightIcon />
+          <Link href="/auth" className={styles.navSignIn}>Sign in</Link>
+          <Link href="/auth?mode=signup" className={`${styles.btn} ${styles.btnPrimary}`}>
+            Start a scan
           </Link>
         </div>
         <button
           className={`${styles.menuBtn} ${menuOpen ? styles.menuBtnActive : ''}`}
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label={menuOpen ? 'Close Menu' : 'Open Menu'}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
         >
-          <span className={styles.bar1} />
-          <span className={styles.bar2} />
-          <span className={styles.bar3} />
+          <span /><span /><span />
         </button>
       </div>
 
-      {/* Mobile Drawer */}
       <div className={`${styles.mobileDrawer} ${menuOpen ? styles.mobileDrawerOpen : ''}`}>
-        <div className={`container ${styles.mobileDrawerInner}`}>
-          <div className={styles.mobileNavLinks}>
-            <a href="#platform" onClick={() => setMenuOpen(false)}>Platform</a>
-            <a href="#surfaces" onClick={() => setMenuOpen(false)}>Target Architectures</a>
-            <a href="#remediation" onClick={() => setMenuOpen(false)}>Remediation Guides</a>
-            <a href="#models" onClick={() => setMenuOpen(false)}>AI Engine</a>
-            <a href="#compliance" onClick={() => setMenuOpen(false)}>Compliance</a>
-            <a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a>
-            <a href="#faq" onClick={() => setMenuOpen(false)}>Enterprise FAQ</a>
-          </div>
+        <div className="container">
+          <nav className={styles.mobileNavLinks} aria-label="Mobile">
+            {NAV_LINKS.map(l => <a key={l.href} href={l.href} onClick={close}>{l.label}</a>)}
+          </nav>
           <div className={styles.mobileNavActions}>
-            <Link href="/auth" className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setMenuOpen(false)}>
-              Sign In
-            </Link>
-            <Link href="/auth?mode=signup" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setMenuOpen(false)}>
-              Request Managed Scan
-              <ArrowRightIcon />
-            </Link>
+            <Link href="/auth" className={`${styles.btn} ${styles.btnSecondary}`} onClick={close}>Sign in</Link>
+            <Link href="/auth?mode=signup" className={`${styles.btn} ${styles.btnPrimary}`} onClick={close}>Start a scan</Link>
           </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
 
-function HeroTerminal() {
-  const [lines, setLines] = useState<string[]>([]);
-  const terminalLines = [
-    '> redsuture audit --target https://api.enterprise-gateway.io --mode autonomous',
-    '  [ORCHESTRATOR] Initializing multi-agent red team with Anthropic Claude & OpenAI...',
-    '  [RECON-AGENT] Discovered 64 attack vectors & mapped API authorization flows',
-    '  [EXPLOIT-AGENT] Probing BOLA & parameterized injection in /api/v2/orders',
-    '  [FINDING-CRITICAL] CVE-2025-2184: Broken Object Level Authorization validated',
-    '  [VALIDATION-AGENT] Deterministic PoC verified in isolated sandbox (Zero false positives)',
-    '  [SUTURE-ENGINE] Synthesized step-by-step remediation guide & code diff',
-    '  [EXPORT-ENGINE] Generated downloadable .patch diff, PDF audit report & SARIF telemetry',
-    '  -------------------------------------------------------------',
-    '  Assessment complete. 100% reproducible findings with remediation ready.',
-  ];
+type Severity = 'critical' | 'high' | 'medium' | 'low';
 
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < terminalLines.length) {
-        setLines(prev => [...prev, terminalLines[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => {
-          setLines([]);
-          i = 0;
-        }, 4000);
-      }
-    }, 240);
-    return () => clearInterval(interval);
-  }, []);
+const SEVERITY_LABEL: Record<Severity, string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
 
+function SeverityPill({ level }: { level: Severity }) {
+  return <span className={`${styles.sev} ${styles[`sev_${level}`]}`}>{SEVERITY_LABEL[level]}</span>;
+}
+
+const SAMPLE_FINDINGS: { level: Severity; title: string; where: string }[] = [
+  { level: 'critical', title: 'Broken object level authorization', where: 'GET /v2/orders/{id}' },
+  { level: 'high', title: 'SQL injection in search filter', where: 'POST /v2/search' },
+  { level: 'high', title: 'JWT accepts unsigned tokens', where: 'POST /auth/session' },
+  { level: 'medium', title: 'SSRF via webhook callback URL', where: 'POST /v2/webhooks' },
+];
+
+function HeroReport() {
   return (
-    <div className={styles.terminal}>
-      <div className={styles.terminalHeader}>
-        <div className={styles.termControls}>
-          <div className={styles.termDot} style={{ background: '#ef4444' }} />
-          <div className={styles.termDot} style={{ background: '#f59e0b' }} />
-          <div className={styles.termDot} style={{ background: '#10b981' }} />
-        </div>
-        <span className={styles.termTitle}>redsuture-core // autonomous-ai-orchestration</span>
-        <span className={styles.termLiveStatus}>
-          <span className={styles.pulseGreen} /> ACTIVE
-        </span>
+    <div className={styles.window} aria-label="Example RedSuture scan report">
+      <div className={styles.windowBar}>
+        <span className={styles.windowDots}><i /><i /><i /></span>
+        <span className={styles.windowUrl}>app.redsuture.com/scans/api.example.com</span>
       </div>
-      <div className={styles.terminalBody}>
-        {lines.filter(Boolean).map((line, i) => {
-          let lineClass = styles.termLine;
-          if (line.includes('[FINDING-CRITICAL]')) lineClass = `${styles.termLine} ${styles.termCritical}`;
-          else if (line.includes('[FINDING-HIGH]')) lineClass = `${styles.termLine} ${styles.termHigh}`;
-          else if (line.includes('[SUTURE-ENGINE]') || line.includes('[EXPORT-ENGINE]')) lineClass = `${styles.termLine} ${styles.termFix}`;
-          else if (line.includes('[VALIDATION-AGENT]')) lineClass = `${styles.termLine} ${styles.termSuccess}`;
-          else if (line.startsWith('>')) lineClass = `${styles.termLine} ${styles.termCmd}`;
 
-          return (
-            <div key={i} className={lineClass}>
-              {line}
+      <div className={styles.reportHead}>
+        <div>
+          <div className={styles.reportTarget}>api.example.com</div>
+          <div className={styles.reportMeta}>
+            <span className={styles.statusDot} /> Scan complete · Web + API · 38 min
+          </div>
+        </div>
+        <span className={styles.reportBadge}>9 verified findings</span>
+      </div>
+
+      <div className={styles.reportStats}>
+        {([['critical', 1], ['high', 3], ['medium', 2], ['low', 3]] as [Severity, number][]).map(([level, n]) => (
+          <div key={level} className={styles.reportStat}>
+            <span className={`${styles.reportStatBar} ${styles[`bar_${level}`]}`} />
+            <span className={styles.reportStatNum}>{n}</span>
+            <span className={styles.reportStatLabel}>{SEVERITY_LABEL[level]}</span>
+          </div>
+        ))}
+      </div>
+
+      <ul className={styles.findingList}>
+        {SAMPLE_FINDINGS.map((f, i) => (
+          <li key={f.title} className={`${styles.findingRow} ${i === 0 ? styles.findingRowActive : ''}`}>
+            <SeverityPill level={f.level} />
+            <div className={styles.findingText}>
+              <span className={styles.findingTitle}>{f.title}</span>
+              <code className={styles.findingWhere}>{f.where}</code>
             </div>
-          );
-        })}
-        <span className={styles.termCursor}>_</span>
+            <span className={styles.findingStatus}>
+              <CheckIcon size={13} /> PoC verified
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className={styles.reportFoot}>
+        <span className={styles.reportFiles}>
+          <code>.patch</code><code>.pdf</code><code>.sarif</code>
+        </span>
+        <span className={styles.reportAction}>
+          <GitIcon size={14} /> Open fix PR
+        </span>
       </div>
     </div>
   );
 }
 
-const targetSurfaces = [
+const STANDARDS = ['SOC 2 Type II', 'ISO/IEC 27001', 'PCI DSS v4.0', 'HIPAA', 'OWASP Top 10', 'NIST CSF 2.0'];
+
+const STEPS = [
   {
-    title: 'Live Web Applications',
-    badge: 'Dynamic DAST',
-    description: 'Black-box adversarial testing of production and staging web apps, SPAs, SSR pipelines, and client interfaces.',
-    highlight: 'XSS, CSRF, DOM manipulation, SSRF & Session Security',
+    title: 'Define the scope',
+    desc: 'Point RedSuture at a live URL, an API, a Git repository, or all three for white-box testing. You decide what is in scope and how hard it is pushed.',
   },
   {
-    title: 'Remote Git Repositories',
-    badge: 'Source SAST + Logic',
-    description: 'Code-level vulnerability analysis directly within GitHub, GitLab, and Bitbucket repositories.',
-    highlight: 'Taint tracking, exposed credentials, hardcoded logic flaws',
+    title: 'Agents attack and validate',
+    desc: 'Reconnaissance, exploitation and validation agents work in parallel. A finding is only reported once a proof of concept reproduces it in an isolated sandbox.',
   },
   {
-    title: 'Local Codebase Workspaces',
-    badge: 'Internal QA',
-    description: 'Direct testing of developer application directories and pre-deployment microservice packages.',
-    highlight: 'Package dependencies, unsafe imports, configuration gaps',
-  },
-  {
-    title: 'White-Box Correlated Hybrid',
-    badge: 'Deep Multi-Target',
-    description: 'Simultaneous testing correlating running live endpoints with source code logic for maximum exploit depth.',
-    highlight: 'Codebase-informed live payload fuzzing & PoC verification',
-  },
-  {
-    title: 'Bulk Enterprise Scope Lists',
-    badge: 'Portfolio Estate',
-    description: 'Continuous portfolio-wide vulnerability scanning across dozens of microservices, APIs, and domain lists.',
-    highlight: 'Batch discovery, automated prioritization & asset tagging',
-  },
-  {
-    title: 'REST, GraphQL & gRPC APIs',
-    badge: 'API Security',
-    description: 'Deep parameter fuzzing, broken object level authorization (BOLA/IDOR), token tampering, and schema exposure.',
-    highlight: 'OAuth scopes, rate-limit bypassing, JWT algorithmic confusion',
+    title: 'Review and ship the fix',
+    desc: 'Every finding includes severity, evidence, root cause and a code fix. Download the patch or open a pull request straight from the dashboard.',
   },
 ];
 
-const platformCapabilities = [
-  {
-    icon: <CpuIcon />,
-    title: 'Advanced AI Frontier Model Orchestration',
-    desc: 'Powered by the latest reasoning models from Anthropic (Claude) and OpenAI, our specialized agent graph emulates real-world threat actors.',
-  },
-  {
-    icon: <ShieldIcon />,
-    title: 'Zero False-Positive Exploit Verification',
-    desc: 'Every identified weakness is validated with an executable proof-of-concept in an isolated runtime sandbox before reporting. Zero alert fatigue.',
-  },
-  {
-    icon: <DownloadIcon />,
-    title: 'Downloadable Step-by-Step Remediation Guides',
-    desc: 'Receive comprehensive remediation packages including line-by-line developer guides, surgical code diffs (.patch), PDF audit reports, and SARIF telemetry.',
-  },
-  {
-    icon: <CodeIcon />,
-    title: 'Target Architecture Flexibility',
-    desc: 'Clients choose the target scope they want tested: Live URLs, Git Repositories, Local Directories, White-box estates, or Domain lists.',
-  },
-  {
-    icon: <FileCheckIcon />,
-    title: 'Audit-Grade Compliance Reporting',
-    desc: 'Export technical SARIF logs and executive pentest attestations formatted for SOC 2 Type II, ISO/IEC 27001, HIPAA, and PCI-DSS v4.0 auditors.',
-  },
-  {
-    icon: <ServerIcon />,
-    title: 'Safe, Non-Destructive Execution',
-    desc: 'Intelligent throttling, sandboxed payloads, and non-destructive testing guarantee continuous validation without downtime or data corruption.',
-  },
+const TARGETS = [
+  { icon: <GlobeIcon />, title: 'Web applications', desc: 'SPAs, server-rendered apps and staging environments, tested black-box.' },
+  { icon: <ApiIcon />, title: 'REST, GraphQL & gRPC APIs', desc: 'Auth flows, object-level access, token handling and schema exposure.' },
+  { icon: <GitIcon />, title: 'Git repositories', desc: 'GitHub, GitLab and Bitbucket — taint analysis, secrets and logic flaws.' },
+  { icon: <FolderIcon />, title: 'Local codebases', desc: 'Pre-deployment services and packages, before they reach production.' },
+  { icon: <LayersIcon />, title: 'White-box hybrid', desc: 'Source code and live endpoints together for deeper, code-informed exploits.' },
+  { icon: <ListIcon />, title: 'Bulk scope lists', desc: 'Portfolios of domains and microservices, prioritized automatically.' },
 ];
 
-const downloadFormats = [
-  {
-    ext: '.patch / .diff',
-    title: 'SutureEngine Code Patch',
-    desc: 'Ready-to-apply git patch files with exact framework-specific remediation code.',
-  },
-  {
-    ext: '.md / .json',
-    title: 'Step-by-Step Developer Guide',
-    desc: 'Detailed architectural walkthrough, root-cause analysis, and verification test scripts.',
-  },
-  {
-    ext: '.pdf',
-    title: 'Executive Audit Pentest Report',
-    desc: 'CISO-level executive summary with CVSS scoring, risk matrices, and compliance mapping.',
-  },
-  {
-    ext: '.sarif',
-    title: 'SARIF v2.1.0 Standard Telemetry',
-    desc: 'Direct integration artifact for CI/CD pipelines, GitHub Security, and enterprise SIEMs.',
-  },
+const VULN_CLASSES = [
+  'Broken object level authorization',
+  'SQL & NoSQL injection',
+  'Server-side request forgery',
+  'JWT & cryptographic flaws',
+  'GraphQL introspection abuse',
+  'Privilege escalation chains',
+  'Remote code execution',
+  'Cross-site scripting',
+  'Rate-limit & business logic bypass',
+  'Dependency & CI/CD poisoning',
 ];
 
-const workflowSteps = [
-  {
-    step: '01',
-    title: 'Select Target Scope',
-    desc: 'You choose which assets to evaluate: live web applications, remote Git repositories, white-box hybrid targets, or bulk domain lists.',
-  },
-  {
-    step: '02',
-    title: 'Autonomous Managed AI Attack',
-    desc: 'We deploy coordinated AI agents on your behalf to map endpoints, probe injection vectors, and safely validate vulnerabilities in a sandbox.',
-  },
-  {
-    step: '03',
-    title: 'Deterministic PoC Validation',
-    desc: 'Each weakness is confirmed with reproducible proof-of-concept exploits, CVSS scores, and exact evidence logs with zero false positives.',
-  },
-  {
-    step: '04',
-    title: 'Download Remediation Package',
-    desc: 'Download step-by-step implementation guides, surgical code patches (.patch), and audit reports to close vulnerabilities instantly.',
-  },
+const AGENTS = [
+  { name: 'Recon', desc: 'Maps endpoints, auth flows and the reachable attack surface.' },
+  { name: 'Exploitation', desc: 'Builds attack trees and executes multi-step exploit chains.' },
+  { name: 'Validation', desc: 'Reproduces each exploit in a sandbox and scores it with CVSS.' },
+  { name: 'SutureEngine', desc: 'Writes the root-cause analysis, guide and code patch.' },
 ];
 
-const enterprisePlans = [
+const FORMATS = [
+  { ext: '.patch', title: 'Code patch', desc: 'Ready-to-apply diff in your framework, or opened as a GitHub pull request.' },
+  { ext: '.md', title: 'Developer guide', desc: 'Root cause, step-by-step fix and a test to confirm the issue is closed.' },
+  { ext: '.pdf', title: 'Executive report', desc: 'CVSS-scored findings, risk summary and compliance mapping for leadership.' },
+  { ext: '.sarif', title: 'SARIF 2.1.0', desc: 'Drops into GitHub code scanning, CI pipelines and your SIEM.' },
+];
+
+const PLANS = [
   {
     name: 'Team',
     price: '$199',
     period: '/month',
-    desc: 'For high-velocity engineering teams requiring continuous automated security validation.',
+    desc: 'Continuous testing for product teams shipping web apps and APIs.',
     features: [
-      '25 Managed Scans / Month',
-      'Web Applications & REST APIs',
-      'Deterministic PoC Validation',
-      'Downloadable Step-by-Step Guides',
-      'SutureEngine Code Patch Exports',
-      'Standard SLA & Support',
+      '25 scans per month',
+      'Web applications & REST APIs',
+      'Proof of concept for every finding',
+      'Remediation guides & code patches',
+      'Email support',
     ],
-    cta: 'Start Team Trial',
+    cta: 'Start trial',
+    href: '/auth?mode=signup',
     popular: false,
   },
   {
     name: 'Scale',
     price: '$599',
     period: '/month',
-    desc: 'For scaling companies with complex architectures, multi-repo setups, and compliance audits.',
+    desc: 'For growing companies with complex architectures and audits to pass.',
     features: [
-      '100 Managed Scans / Month',
-      'Web, REST, GraphQL, gRPC & Mobile',
-      'Git Repositories & White-Box Hybrid',
-      'Multi-Format Exports (PDF, SARIF, Patch)',
-      'SOC 2, ISO 27001 & PCI-DSS Reports',
-      'Jira, Slack & SIEM Webhook Integration',
-      'Role-Based Access Control (RBAC)',
-      'Priority Security Engineering Support',
+      '100 scans per month',
+      'Everything in Team, plus:',
+      'GraphQL, gRPC & mobile backends',
+      'Git repositories & white-box testing',
+      'PDF, SARIF & patch exports',
+      'SOC 2, ISO 27001 & PCI DSS reports',
+      'Jira, Slack & SIEM integrations',
+      'Role-based access control',
+      'Priority support',
     ],
-    cta: 'Start Scale Trial',
+    cta: 'Start trial',
+    href: '/auth?mode=signup',
     popular: true,
   },
   {
     name: 'Enterprise',
     price: 'Custom',
     period: '',
-    desc: 'For security organizations requiring custom VPC execution, private models, and dedicated SLAs.',
+    desc: 'For security teams that need private deployment and dedicated support.',
     features: [
-      'Unlimited Managed Red Team Scans',
-      'Self-Hosted / Private VPC Runner Deployment',
-      'Custom LLM & Private Model Inference',
-      'SAML 2.0 / OIDC SSO & Custom RBAC',
-      'Custom Compliance & Executive Briefings',
-      'Custom Exploit Payload Rules & Throttling',
-      'Dedicated Security Architect & 99.99% SLA',
-      '24/7 Red Team Escalation Channel',
+      'Unlimited scans',
+      'Self-hosted or private VPC runners',
+      'Bring your own model',
+      'SAML / OIDC single sign-on',
+      'Custom payload rules & throttling',
+      'Dedicated security architect',
+      'Custom SLA & 24/7 escalation',
     ],
-    cta: 'Contact Enterprise Sales',
+    cta: 'Contact sales',
+    href: '/auth?mode=signup',
     popular: false,
   },
 ];
 
-const faqs = [
+const FAQS = [
   {
-    question: 'How do you perform penetration tests on our behalf?',
-    answer: 'You define the target architecture you want tested (a live URL, a repository, or a hybrid white-box environment). Our managed platform deploys coordinated AI agents powered by OpenAI and Anthropic Claude models to discover, validate, and document security flaws with zero false positives.',
+    q: 'How is RedSuture different from a vulnerability scanner?',
+    a: 'Scanners match signatures and report anything that looks suspicious. RedSuture’s agents reason through your application the way an attacker would — chaining requests, abusing business logic and escalating privileges — and only report a finding once it has been reproduced with a working proof of concept.',
   },
   {
-    question: 'What format do the remediation guides and code fixes come in?',
-    answer: 'You receive downloadable step-by-step developer implementation procedures in Markdown/JSON, ready-to-apply Git patch files (.patch / .diff), executive audit-ready PDF reports, and standardized SARIF v2.1.0 logs for CI/CD integration.',
+    q: 'Is it safe to run against production?',
+    a: 'Scans use non-destructive payloads and adaptive rate limiting by default, and you can tune throttling per target. Most teams start with staging or preview environments, then move to continuous testing in production.',
   },
   {
-    question: 'Which AI models power the RedSuture platform?',
-    answer: 'RedSuture orchestrates the latest state-of-the-art AI reasoning models, including Anthropic Claude 3.7 / Sonnet / Opus series and OpenAI frontier reasoning models (o1 / GPT-4o / GPT-5 class), into an autonomous red-teaming pipeline.',
+    q: 'What do we receive at the end of a scan?',
+    a: 'Each finding includes severity, request and response evidence, root-cause analysis and a code fix. Results can be exported as a .patch file, a Markdown developer guide, an executive PDF report and SARIF 2.1.0 — or pushed to GitHub as a pull request.',
   },
   {
-    question: 'How does RedSuture ensure production environments remain safe?',
-    answer: 'RedSuture operates with strictly non-destructive payload policies and adaptive rate-limiting algorithms. Scans can be executed against staging, preview environments, or live production with fine-grained throttling controls to protect database integrity and uptime.',
+    q: 'Which AI models power RedSuture?',
+    a: 'RedSuture orchestrates frontier reasoning models from Anthropic and OpenAI through the Strix agent framework. Enterprise customers can bring their own model or run inference privately.',
   },
   {
-    question: 'Are RedSuture reports accepted for SOC 2, ISO 27001, and PCI DSS audits?',
-    answer: 'Yes. RedSuture produces industry-standard SARIF logs, technical findings, and executive pentest summaries that fulfill technical testing requirements for SOC 2 Type II, ISO/IEC 27001, and PCI DSS v4.0 penetration testing mandates.',
+    q: 'Will the reports work for SOC 2, ISO 27001 or PCI DSS audits?',
+    a: 'Reports are structured around the penetration testing requirements of SOC 2 Type II, ISO/IEC 27001, PCI DSS v4.0 and HIPAA, covering scope, methodology, CVSS-scored findings and remediation evidence. Confirm specific requirements with your auditor.',
+  },
+  {
+    q: 'Do we need permission to test a target?',
+    a: 'Yes. You may only scan applications and infrastructure you own or have explicit written authorization to test. Unauthorized testing is illegal and violates our terms of service.',
   },
 ];
 
-export default function LandingPage() {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+function SectionHeader({ eyebrow, title, sub, center = false }: { eyebrow: string; title: string; sub?: string; center?: boolean }) {
+  return (
+    <div className={`${styles.sectionHeader} ${center ? styles.sectionHeaderCenter : ''}`}>
+      <span className={styles.eyebrow}>{eyebrow}</span>
+      <h2 className={styles.sectionTitle}>{title}</h2>
+      {sub && <p className={styles.sectionSub}>{sub}</p>}
+    </div>
+  );
+}
 
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div className={styles.faqList}>
+      {FAQS.map((item, i) => {
+        const isOpen = open === i;
+        return (
+          <div key={item.q} className={`${styles.faqItem} ${isOpen ? styles.faqItemOpen : ''}`}>
+            <h3>
+              <button
+                className={styles.faqQuestion}
+                onClick={() => setOpen(isOpen ? null : i)}
+                aria-expanded={isOpen}
+                aria-controls={`faq-${i}`}
+              >
+                <span>{item.q}</span>
+                <PlusIcon className={styles.faqIcon} />
+              </button>
+            </h3>
+            <div id={`faq-${i}`} className={styles.faqAnswer} hidden={!isOpen}>
+              <p>{item.a}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function LandingPage() {
   return (
     <div className={styles.page}>
       <NavBar />
 
-      {/* Hero Section */}
-      <section className={styles.hero}>
-        <div className={styles.heroGlow} />
-        <div className={styles.heroGrid} />
-        <div className={`container ${styles.heroContent}`}>
-          <div className={styles.heroLeft}>
-            <div className={styles.heroBadge}>
-              <span className={styles.pulseIndicator} />
-              <span>POWERED BY LATEST OPENAI &amp; ANTHROPIC CLAUDE MODELS</span>
-            </div>
-            <h1 className={styles.heroTitle}>
-              Autonomous AI Offense.<br />
-              <span className={styles.heroTitleAccent}>Step-by-Step Remediation.</span>
-            </h1>
-            <p className={styles.heroSubtitle}>
-              We deliver managed, continuous AI penetration testing on your behalf powered by the latest OpenAI and Anthropic Claude reasoning models. Specify your target architecture—Live Web Apps, Repositories, or White-Box estates—and receive verified exploit PoCs with step-by-step remediation guides and surgical code patches ready to download.
-            </p>
-            <div className={styles.heroActions}>
-              <Link href="/auth?mode=signup" className="btn-primary" style={{ padding: '14px 28px', fontSize: '0.95rem' }}>
-                Deploy Managed Security Scan
-                <ArrowRightIcon />
-              </Link>
-              <a href="#remediation" className="btn-secondary" style={{ padding: '14px 24px' }}>
-                Explore Remediation Formats
+      <main>
+        {/* Hero */}
+        <section className={styles.hero}>
+          <div className={styles.heroBackdrop} aria-hidden="true" />
+          <div className={`container ${styles.heroInner}`}>
+            <div className={styles.heroCopy}>
+              <a href="#deliverables" className={styles.announce}>
+                <span className={styles.announceTag}>New</span>
+                Push verified fixes straight to GitHub pull requests
+                <ArrowRightIcon size={14} />
               </a>
-            </div>
-            <div className={styles.heroMetrics}>
-              <div className={styles.metricItem}>
-                <span className={styles.metricValue}>100%</span>
-                <span className={styles.metricLabel}>Verified PoC Exploits</span>
-              </div>
-              <div className={styles.metricDivider} />
-              <div className={styles.metricItem}>
-                <span className={styles.metricValue}>Multi-Format</span>
-                <span className={styles.metricLabel}>Downloadable Guides</span>
-              </div>
-              <div className={styles.metricDivider} />
-              <div className={styles.metricItem}>
-                <span className={styles.metricValue}>Zero</span>
-                <span className={styles.metricLabel}>False Positive Rate</span>
-              </div>
-            </div>
-          </div>
-          <div className={styles.heroRight}>
-            <HeroTerminal />
-          </div>
-        </div>
-      </section>
-
-      {/* Enterprise Threat Surface Ticker with Isolated Overflow Container */}
-      <div className={styles.ticker}>
-        <div className={styles.tickerLabel}>
-          <span>ACTIVE THREAT MITIGATION COVERAGE</span>
-        </div>
-        <div className={styles.tickerTrackWrapper}>
-          <div className={styles.tickerTrack}>
-            {[...THREAT_VECTORS, ...THREAT_VECTORS].map((vector, index) => (
-              <span key={index} className={styles.tickerItem}>
-                <span className={styles.tickerDot} /> {vector}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Compliance & Standards Bar */}
-      <section id="compliance" className={styles.complianceBar}>
-        <div className="container">
-          <p className={styles.complianceHeading}>AUDIT-GRADE SECURITY COMPLIANCE AUTOMATION</p>
-          <div className={styles.complianceGrid}>
-            <div className={styles.complianceItem}>
-              <ShieldIcon className={styles.complianceIcon} />
-              <span>SOC 2 Type II</span>
-            </div>
-            <div className={styles.complianceItem}>
-              <LockIcon className={styles.complianceIcon} />
-              <span>ISO / IEC 27001</span>
-            </div>
-            <div className={styles.complianceItem}>
-              <FileCheckIcon className={styles.complianceIcon} />
-              <span>PCI-DSS v4.0</span>
-            </div>
-            <div className={styles.complianceItem}>
-              <ServerIcon className={styles.complianceIcon} />
-              <span>HIPAA Security Rule</span>
-            </div>
-            <div className={styles.complianceItem}>
-              <CodeIcon className={styles.complianceIcon} />
-              <span>OWASP Top 10</span>
-            </div>
-            <div className={styles.complianceItem}>
-              <CpuIcon className={styles.complianceIcon} />
-              <span>NIST CSF 2.0</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Attack Surface Coverage by Client Target Types */}
-      <section id="surfaces" className={styles.section} style={{ background: 'var(--bg-surface)' }}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionCategory}>CLIENT TARGET ARCHITECTURES</span>
-            <h2 className={styles.sectionTitle}>We test the exact assets your business relies on.</h2>
-            <p className={styles.sectionSub}>
-              Select the target types you want evaluated. Our autonomous AI handles the rest, safely discovering exploitable vulnerabilities across every digital tier.
-            </p>
-          </div>
-          <div className={styles.surfacesGrid}>
-            {targetSurfaces.map((surface, idx) => (
-              <div key={idx} className={styles.surfaceCard}>
-                <div className={styles.surfaceHeader}>
-                  <h3 className={styles.surfaceTitle}>{surface.title}</h3>
-                  <span className={styles.surfaceBadge}>{surface.badge}</span>
-                </div>
-                <p className={styles.surfaceDesc}>{surface.description}</p>
-                <div className={styles.surfaceFooter}>
-                  <span>Coverage: {surface.highlight}</span>
-                  <CheckmarkIcon className={styles.checkIcon} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Core Platform Capabilities */}
-      <section id="platform" className={styles.section}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionCategory}>ENTERPRISE CAPABILITIES</span>
-            <h2 className={styles.sectionTitle}>Engineering-first offensive intelligence.</h2>
-            <p className={styles.sectionSub}>
-              Move from periodic manual pentests and noisy vulnerability scanners to continuous, verified adversarial simulations with complete remediation packages.
-            </p>
-          </div>
-          <div className={styles.featuresGrid}>
-            {platformCapabilities.map((feature, idx) => (
-              <div key={idx} className={styles.featureCard}>
-                <div className={styles.featureIconWrapper}>
-                  {feature.icon}
-                </div>
-                <h3 className={styles.featureTitle}>{feature.title}</h3>
-                <p className={styles.featureDesc}>{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI Models Showcase */}
-      <section id="models" className={styles.section} style={{ background: 'var(--bg-base)' }}>
-        <div className="container">
-          <div className={styles.modelsContainer}>
-            <div className={styles.modelsLeft}>
-              <span className={styles.sectionCategory}>FRONTIER AI REASONING</span>
-              <h2 className={styles.modelsTitle}>Orchestrating OpenAI &amp; Anthropic Claude.</h2>
-              <p className={styles.modelsDesc}>
-                RedSuture combines the deepest reasoning architectures in AI to form a multi-agent offensive security pipeline. Rather than shallow static rules, our agents actively reason through complex authentication flows, business logic edge-cases, and multi-step exploit chains.
+              <h1 className={styles.heroTitle}>
+                Autonomous offense.
+                <span className={styles.heroTitleAccent}>Instant closure.</span>
+              </h1>
+              <p className={styles.heroSub}>
+                RedSuture deploys AI agents that attack your web apps, APIs and code the way a real adversary would — then proves every finding with a working exploit and hands your team a ready-to-merge fix.
               </p>
-              <div className={styles.modelsList}>
-                <div className={styles.modelItem}>
-                  <div className={styles.modelDot} />
-                  <div>
-                    <strong>Anthropic Claude Reasoning Architecture:</strong>
-                    <span> Deep contextual code comprehension, taint path mapping, and high-precision remediation diff generation.</span>
+              <div className={styles.heroActions}>
+                <Link href="/auth?mode=signup" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}>
+                  Start a scan <ArrowRightIcon />
+                </Link>
+                <a href="#deliverables" className={`${styles.btn} ${styles.btnSecondary} ${styles.btnLg}`}>
+                  See a sample report
+                </a>
+              </div>
+              <ul className={styles.heroPoints}>
+                <li><CheckIcon /> Proof of concept for every finding</li>
+                <li><CheckIcon /> Non-destructive by default</li>
+                <li><CheckIcon /> Fixes as patches or pull requests</li>
+              </ul>
+            </div>
+            <div className={styles.heroVisual}>
+              <HeroReport />
+            </div>
+          </div>
+        </section>
+
+        {/* Standards */}
+        <section id="compliance" className={styles.standards} aria-label="Compliance frameworks">
+          <div className="container">
+            <p className={styles.standardsLabel}>Reports mapped to the frameworks your auditors use</p>
+            <ul className={styles.standardsList}>
+              {STANDARDS.map(s => <li key={s}>{s}</li>)}
+            </ul>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section id="how-it-works" className={styles.section}>
+          <div className="container">
+            <SectionHeader
+              eyebrow="How it works"
+              title="From scope to merged fix, without the six-week wait."
+              sub="Traditional pentests are point-in-time and slow to act on. RedSuture runs whenever you ship and delivers results your engineers can act on the same day."
+            />
+            <ol className={styles.steps}>
+              {STEPS.map((s, i) => (
+                <li key={s.title} className={styles.step}>
+                  <span className={styles.stepNum}>{String(i + 1).padStart(2, '0')}</span>
+                  <h3 className={styles.stepTitle}>{s.title}</h3>
+                  <p className={styles.stepDesc}>{s.desc}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Platform */}
+        <section id="platform" className={`${styles.section} ${styles.sectionAlt}`}>
+          <div className="container">
+            <SectionHeader
+              eyebrow="Platform"
+              title="Findings you can trust. Fixes you can merge."
+              sub="Every result is backed by evidence and paired with remediation written for your codebase — not a generic advisory."
+            />
+            <div className={styles.bento}>
+              <article className={`${styles.card} ${styles.cardWide}`}>
+                <div className={styles.cardIcon}><ShieldIcon /></div>
+                <h3 className={styles.cardTitle}>Proof, not guesses</h3>
+                <p className={styles.cardDesc}>
+                  The validation agent replays each exploit in an isolated sandbox. If it can&apos;t be reproduced, it isn&apos;t reported — so your team stops triaging noise.
+                </p>
+                <div className={styles.evidence}>
+                  <div className={styles.evidenceHead}>
+                    <span>Evidence · BOLA on /v2/orders</span>
+                    <span className={styles.evidenceOk}><CheckIcon size={13} /> Reproduced 3/3</span>
                   </div>
+                  <pre className={styles.code}>
+<span className={styles.tokMuted}># Request as user B for an order owned by user A</span>{'\n'}
+<span className={styles.tokKey}>GET</span> /v2/orders/8812 HTTP/1.1{'\n'}
+Authorization: Bearer <span className={styles.tokStr}>&lt;user_b_token&gt;</span>{'\n'}
+{'\n'}
+<span className={styles.tokOk}>HTTP/1.1 200 OK</span>{'\n'}
+{'{ '}<span className={styles.tokStr}>&quot;order_id&quot;</span>: 8812, <span className={styles.tokStr}>&quot;owner&quot;</span>: <span className={styles.tokStr}>&quot;user_a&quot;</span>, <span className={styles.tokStr}>&quot;card_last4&quot;</span>: <span className={styles.tokStr}>&quot;4242&quot;</span>{' }'}
+                  </pre>
                 </div>
-                <div className={styles.modelItem}>
-                  <div className={styles.modelDot} />
-                  <div>
-                    <strong>OpenAI Frontier Models:</strong>
-                    <span> Rapid adversarial hypothesis generation, dynamic fuzzing logic, and complex protocol payload formulation.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.modelsRight}>
-              <div className={styles.agentGraphBox}>
-                <div className={styles.agentNode}>
-                  <span className={styles.agentTag}>AGENT 01</span>
-                  <strong>Reconnaissance &amp; Surface Mapper</strong>
-                  <span>Automated endpoint crawling &amp; OAuth flow graphing</span>
-                </div>
-                <div className={styles.agentArrow}>↓</div>
-                <div className={styles.agentNode}>
-                  <span className={styles.agentTag}>AGENT 02</span>
-                  <strong>Adversarial Reasoning &amp; Exploitation</strong>
-                  <span>Stateful attack tree generation &amp; injection execution</span>
-                </div>
-                <div className={styles.agentArrow}>↓</div>
-                <div className={styles.agentNode}>
-                  <span className={styles.agentTag}>AGENT 03</span>
-                  <strong>Deterministic PoC Sandbox Validator</strong>
-                  <span>Zero false-positive exploit verification &amp; CVSS rating</span>
-                </div>
-                <div className={styles.agentArrow}>↓</div>
-                <div className={styles.agentNodeHighlight}>
-                  <span className={styles.agentTagHighlight}>SUTURE ENGINE</span>
-                  <strong>Remediation &amp; Patch Synthesizer</strong>
-                  <span>Step-by-step guide &amp; multi-format downloadable code diffs</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+              </article>
 
-      {/* Downloadable Remediation Formats Showcase */}
-      <section id="remediation" className={styles.section} style={{ background: 'var(--bg-surface)' }}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionCategory}>MULTI-FORMAT DELIVERABLES</span>
-            <h2 className={styles.sectionTitle}>Everything your engineering team needs to fix fast.</h2>
-            <p className={styles.sectionSub}>
-              We don&apos;t just dump issue tickets. RedSuture generates step-by-step developer guides and surgical code patches ready to download in whichever format fits your workflow.
-            </p>
-          </div>
-
-          <div className={styles.formatsGrid}>
-            {downloadFormats.map((f, i) => (
-              <div key={i} className={styles.formatCard}>
-                <div className={styles.formatExt}>{f.ext}</div>
-                <h3 className={styles.formatTitle}>{f.title}</h3>
-                <p className={styles.formatDesc}>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.diffContainer} style={{ marginTop: '40px' }}>
-            <div className={styles.diffHeader}>
-              <div className={styles.diffTab}>
-                <CodeIcon className={styles.diffTabIcon} />
-                <span>api/src/controllers/authController.ts</span>
-                <span className={styles.diffBadge}>Step-by-Step Remediation Guide Attached</span>
-              </div>
-            </div>
-            <div className={styles.diffBody}>
-              <div className={styles.diffSection}>
-                <div className={styles.diffLabelDanger}>VULNERABLE IMPLEMENTATION (CWE-89 &amp; BOLA)</div>
-                <pre className={styles.diffCode}>
-{`// Vulnerable to unauthenticated direct object access and raw query injection
-export async function getAccountTransactions(req: Request, res: Response) {
-  const { accountId, filter } = req.body;
-  const rawQuery = "SELECT * FROM transactions WHERE account_id = '" + accountId + "'";
-  const records = await db.raw(rawQuery);
-  return res.json(records);
-}`}
+              <article className={styles.card}>
+                <div className={styles.cardIcon}><CodeIcon /></div>
+                <h3 className={styles.cardTitle}>Fixes in your stack</h3>
+                <p className={styles.cardDesc}>SutureEngine writes framework-specific patches with the root cause explained line by line.</p>
+                <pre className={`${styles.code} ${styles.codeSmall}`}>
+<span className={styles.diffDel}>- const order = await db.orders.find(id);</span>{'\n'}
+<span className={styles.diffAdd}>+ const order = await db.orders.find(</span>{'\n'}
+<span className={styles.diffAdd}>+   {'{'} id, ownerId: req.user.id {'}'}</span>{'\n'}
+<span className={styles.diffAdd}>+ );</span>{'\n'}
+<span className={styles.diffAdd}>+ if (!order) throw new NotFound();</span>
                 </pre>
-              </div>
-              <div className={styles.diffSection}>
-                <div className={styles.diffLabelSuccess}>SUTURE REMEDIATION (PARAMETRIZED &amp; SCOPED)</div>
-                <pre className={styles.diffCode}>
-{`// Verified patch: Strict tenant claim validation & parameterized query
-export async function getAccountTransactions(req: AuthenticatedRequest, res: Response) {
-  const { accountId } = req.params;
-  const sessionUserId = req.user.id;
-  
-  // 1. Enforce tenant boundary check
-  await verifyAccountOwnership(sessionUserId, accountId);
-  
-  // 2. Parameterized database lookup
-  const records = await db('transactions')
-    .where({ account_id: accountId, user_id: sessionUserId })
-    .select('id', 'amount', 'timestamp', 'status');
-    
-  return res.json(records);
-}`}
-                </pre>
-              </div>
+              </article>
+
+              <article className={styles.card}>
+                <div className={styles.cardIcon}><GitIcon /></div>
+                <h3 className={styles.cardTitle}>Fits your workflow</h3>
+                <p className={styles.cardDesc}>Scan on every pull request, send SARIF to GitHub code scanning, and route findings to Jira or Slack.</p>
+              </article>
+
+              <article className={styles.card}>
+                <div className={styles.cardIcon}><GaugeIcon /></div>
+                <h3 className={styles.cardTitle}>Safe by default</h3>
+                <p className={styles.cardDesc}>Non-destructive payloads, adaptive rate limiting and strict scope allowlists keep production stable.</p>
+              </article>
+
+              <article className={styles.card}>
+                <div className={styles.cardIcon}><FileCheckIcon /></div>
+                <h3 className={styles.cardTitle}>Audit-ready reporting</h3>
+                <p className={styles.cardDesc}>Executive PDFs with CVSS scoring and mapping to SOC 2, ISO 27001, PCI DSS and HIPAA.</p>
+              </article>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* How it Works / 4-Step Process */}
-      <section className={styles.section}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionCategory}>MANAGED SERVICE WORKFLOW</span>
-            <h2 className={styles.sectionTitle}>From scope selection to verified remediation.</h2>
-            <p className={styles.sectionSub}>
-              A seamless continuous security lifecycle operated on your behalf with zero developer friction.
-            </p>
+        {/* Agents */}
+        <section id="engine" className={styles.section}>
+          <div className="container">
+            <SectionHeader
+              eyebrow="AI engine"
+              title="A coordinated red team of agents, not a rule list."
+              sub="Built on frontier reasoning models from Anthropic and OpenAI, RedSuture’s agents work through authentication flows, business logic and multi-step exploit chains that signature-based tools miss."
+            />
+            <ol className={styles.pipeline}>
+              {AGENTS.map((a, i) => (
+                <li key={a.name} className={`${styles.agent} ${i === AGENTS.length - 1 ? styles.agentFinal : ''}`}>
+                  <span className={styles.agentIndex}>Agent {String(i + 1).padStart(2, '0')}</span>
+                  <h3 className={styles.agentName}>{a.name}</h3>
+                  <p className={styles.agentDesc}>{a.desc}</p>
+                </li>
+              ))}
+            </ol>
           </div>
-          <div className={styles.stepsGrid}>
-            {workflowSteps.map((step, idx) => (
-              <div key={idx} className={styles.stepCard}>
-                <div className={styles.stepHeader}>
-                  <span className={styles.stepNum}>{step.step}</span>
-                  {idx < workflowSteps.length - 1 && <div className={styles.stepConnector} />}
-                </div>
-                <h3 className={styles.stepTitle}>{step.title}</h3>
-                <p className={styles.stepDesc}>{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className={styles.section} style={{ background: 'var(--bg-surface)' }}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionCategory}>MANAGED SERVICE PRICING</span>
-            <h2 className={styles.sectionTitle}>Predictable, transparent tiering.</h2>
-            <p className={styles.sectionSub}>
-              Enterprise-grade autonomous offensive security at a fraction of traditional consultancy retainers.
-            </p>
-          </div>
-          <div className={styles.pricingGrid}>
-            {enterprisePlans.map((plan, idx) => (
-              <div key={idx} className={`${styles.pricingCard} ${plan.popular ? styles.pricingCardPopular : ''}`}>
-                {plan.popular && <div className={styles.popularBadge}>RECOMMENDED FOR TEAMS</div>}
-                <div className={styles.pricingHeader}>
-                  <h3 className={styles.planName}>{plan.name}</h3>
-                  <div className={styles.planPriceWrapper}>
-                    <span className={styles.planPrice}>{plan.price}</span>
-                    {plan.period && <span className={styles.planPeriod}>{plan.period}</span>}
+        {/* Coverage */}
+        <section id="coverage" className={`${styles.section} ${styles.sectionAlt}`}>
+          <div className="container">
+            <SectionHeader
+              eyebrow="Coverage"
+              title="Test the assets your business actually runs on."
+              sub="Choose any combination of targets. Agents adapt their techniques to each one."
+            />
+            <div className={styles.targets}>
+              {TARGETS.map(t => (
+                <div key={t.title} className={styles.target}>
+                  <div className={styles.targetIcon}>{t.icon}</div>
+                  <div>
+                    <h3 className={styles.targetTitle}>{t.title}</h3>
+                    <p className={styles.targetDesc}>{t.desc}</p>
                   </div>
-                  <p className={styles.planDesc}>{plan.desc}</p>
                 </div>
-                <div className={styles.planDivider} />
-                <ul className={styles.planFeatures}>
-                  {plan.features.map((item, fIdx) => (
-                    <li key={fIdx} className={styles.planFeatureItem}>
-                      <CheckmarkIcon className={styles.featureCheckIcon} />
-                      <span>{item}</span>
+              ))}
+            </div>
+            <div className={styles.vulns}>
+              <span className={styles.vulnsLabel}>Including</span>
+              <ul className={styles.vulnList}>
+                {VULN_CLASSES.map(v => <li key={v}>{v}</li>)}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Deliverables */}
+        <section id="deliverables" className={styles.section}>
+          <div className="container">
+            <div className={styles.split}>
+              <div>
+                <SectionHeader
+                  eyebrow="Deliverables"
+                  title="Everything your team needs to close the issue."
+                  sub="Each finding ships as a complete remediation package, in the format that fits how you work."
+                />
+                <ul className={styles.formats}>
+                  {FORMATS.map(f => (
+                    <li key={f.ext} className={styles.format}>
+                      <code className={styles.formatExt}>{f.ext}</code>
+                      <div>
+                        <div className={styles.formatTitle}>{f.title}</div>
+                        <p className={styles.formatDesc}>{f.desc}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/auth?mode=signup"
-                  className={plan.popular ? 'btn-primary' : 'btn-secondary'}
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
-                >
-                  {plan.cta}
+              </div>
+
+              <div className={styles.window}>
+                <div className={styles.windowBar}>
+                  <span className={styles.windowDots}><i /><i /><i /></span>
+                  <span className={styles.windowUrl}>src/controllers/transactions.ts</span>
+                  <span className={styles.windowTag}>CWE-89 · CWE-639</span>
+                </div>
+                <pre className={`${styles.code} ${styles.diff}`}>
+<span className={styles.diffHunk}>@@ -12,8 +12,14 @@ transactions.ts</span>{'\n'}
+<span className={styles.diffDel}>- export async function getTransactions(req: Request, res: Response) {'{'}</span>{'\n'}
+<span className={styles.diffDel}>-   const {'{'} accountId {'}'} = req.body;</span>{'\n'}
+<span className={styles.diffDel}>-   const sql = &quot;SELECT * FROM tx WHERE account_id = &apos;&quot; + accountId + &quot;&apos;&quot;;</span>{'\n'}
+<span className={styles.diffDel}>-   const records = await db.raw(sql);</span>{'\n'}
+<span className={styles.diffAdd}>+ export async function getTransactions(req: AuthedRequest, res: Response) {'{'}</span>{'\n'}
+<span className={styles.diffAdd}>+   const {'{'} accountId {'}'} = req.params;</span>{'\n'}
+<span className={styles.diffAdd}>+   const userId = req.user.id;</span>{'\n'}
+<span className={styles.diffAdd}>+</span>{'\n'}
+<span className={styles.diffAdd}>+   // Enforce tenant boundary before any data access</span>{'\n'}
+<span className={styles.diffAdd}>+   await verifyAccountOwnership(userId, accountId);</span>{'\n'}
+<span className={styles.diffAdd}>+</span>{'\n'}
+<span className={styles.diffAdd}>+   // Parameterized query scoped to the caller</span>{'\n'}
+<span className={styles.diffAdd}>+   const records = await db(&apos;transactions&apos;)</span>{'\n'}
+<span className={styles.diffAdd}>+     .where({'{'} account_id: accountId, user_id: userId {'}'})</span>{'\n'}
+<span className={styles.diffAdd}>+     .select(&apos;id&apos;, &apos;amount&apos;, &apos;timestamp&apos;, &apos;status&apos;);</span>{'\n'}
+<span className={styles.diffCtx}>    return res.json(records);</span>{'\n'}
+<span className={styles.diffCtx}>  {'}'}</span>
+                </pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className={`${styles.section} ${styles.sectionAlt}`}>
+          <div className="container">
+            <SectionHeader
+              center
+              eyebrow="Pricing"
+              title="Simple, predictable plans."
+              sub="Continuous offensive testing for a fraction of a traditional consultancy retainer."
+            />
+            <div className={styles.pricing}>
+              {PLANS.map(plan => (
+                <div key={plan.name} className={`${styles.plan} ${plan.popular ? styles.planPopular : ''}`}>
+                  <div className={styles.planHead}>
+                    <h3 className={styles.planName}>{plan.name}</h3>
+                    {plan.popular && <span className={styles.planBadge}>Most popular</span>}
+                  </div>
+                  <p className={styles.planDesc}>{plan.desc}</p>
+                  <div className={styles.planPrice}>
+                    <span className={styles.planAmount}>{plan.price}</span>
+                    {plan.period && <span className={styles.planPeriod}>{plan.period}</span>}
+                  </div>
+                  <Link
+                    href={plan.href}
+                    className={`${styles.btn} ${plan.popular ? styles.btnPrimary : styles.btnSecondary} ${styles.btnBlock}`}
+                  >
+                    {plan.cta}
+                  </Link>
+                  <ul className={styles.planFeatures}>
+                    {plan.features.map(f => (
+                      f.endsWith(':')
+                        ? <li key={f} className={styles.planFeatureNote}>{f}</li>
+                        : <li key={f}><CheckIcon className={styles.planCheck} />{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className={styles.section}>
+          <div className={`container ${styles.faqLayout}`}>
+            <SectionHeader
+              eyebrow="FAQ"
+              title="Questions, answered."
+              sub="Can’t find what you’re looking for? Our security team is happy to walk you through a scan."
+            />
+            <Faq />
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className={styles.cta}>
+          <div className="container">
+            <div className={styles.ctaBox}>
+              <h2 className={styles.ctaTitle}>See what an attacker would find — before they do.</h2>
+              <p className={styles.ctaSub}>Launch your first scan in minutes. Verified findings and ready-to-merge fixes, delivered to your dashboard.</p>
+              <div className={styles.ctaActions}>
+                <Link href="/auth?mode=signup" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}>
+                  Start a scan <ArrowRightIcon />
+                </Link>
+                <Link href="/auth" className={`${styles.btn} ${styles.btnSecondary} ${styles.btnLg}`}>
+                  Sign in to dashboard
                 </Link>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Enterprise FAQ */}
-      <section id="faq" className={styles.section}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionCategory}>ENTERPRISE FAQ</span>
-            <h2 className={styles.sectionTitle}>Frequently asked questions.</h2>
-            <p className={styles.sectionSub}>
-              Key technical details regarding our managed AI services, target architecture options, and delivery formats.
-            </p>
-          </div>
-          <div className={styles.faqList}>
-            {faqs.map((faq, idx) => {
-              const isOpen = activeFaq === idx;
-              return (
-                <div
-                  key={idx}
-                  className={`${styles.faqItem} ${isOpen ? styles.faqItemOpen : ''}`}
-                  onClick={() => setActiveFaq(isOpen ? null : idx)}
-                >
-                  <div className={styles.faqQuestion}>
-                    <span>{faq.question}</span>
-                    <span className={styles.faqToggleIcon}>{isOpen ? '−' : '+'}</span>
-                  </div>
-                  {isOpen && <div className={styles.faqAnswer}>{faq.answer}</div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Final Enterprise CTA */}
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaGlow} />
-        <div className="container" style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-          <div className={styles.heroBadge} style={{ margin: '0 auto 20px auto' }}>
-            <span>EVALUATE YOUR SECURITY POSTURE</span>
-          </div>
-          <h2 className={styles.ctaTitle}>Fortify your digital assets with autonomous AI offensive testing.</h2>
-          <p className={styles.ctaSub}>
-            Deploy your first security assessment in minutes. Validated proof-of-concept exploits and downloadable step-by-step remediation guides.
-          </p>
-          <div className={styles.ctaActions}>
-            <Link href="/auth?mode=signup" className="btn-primary" style={{ fontSize: '1rem', padding: '16px 36px' }}>
-              Launch Initial Security Scan
-              <ArrowRightIcon />
-            </Link>
-            <Link href="/auth" className="btn-secondary" style={{ fontSize: '1rem', padding: '16px 28px' }}>
-              Access Security Dashboard
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Enterprise Footer */}
       <footer className={styles.footer}>
         <div className="container">
           <div className={styles.footerTop}>
             <div className={styles.footerBrand}>
-              <div className={styles.logo}>
-                <div className={styles.logoBadge}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                  </svg>
-                </div>
-                <span className={styles.logoText}>RedSuture</span>
-              </div>
-              <p className={styles.footerTagline}>
-                Managed autonomous penetration testing and downloadable vulnerability remediation guides for modern enterprise applications.
-              </p>
-              <p className={styles.footerStudio}>
-                Engineered by <span className={styles.studioName}>NextAI Studios</span>
-              </p>
+              <Logo />
+              <p>AI-powered penetration testing with verified findings and ready-to-merge fixes.</p>
+              <p className={styles.footerStudio}>A product of <strong>NextAI Studios</strong></p>
             </div>
-            <div className={styles.footerLinks}>
+            <div className={styles.footerCols}>
               <div className={styles.footerCol}>
-                <div className={styles.footerColTitle}>Platform</div>
-                <a href="#models">AI Reasoning Engine</a>
-                <a href="#surfaces">Target Architectures</a>
-                <a href="#remediation">Downloadable Guides</a>
-                <Link href="/dashboard">Security Dashboard</Link>
+                <h4>Product</h4>
+                <a href="#how-it-works">How it works</a>
+                <a href="#platform">Platform</a>
+                <a href="#engine">AI engine</a>
+                <a href="#pricing">Pricing</a>
               </div>
               <div className={styles.footerCol}>
-                <div className={styles.footerColTitle}>Target Types</div>
-                <a href="#surfaces">Live Web Apps &amp; APIs</a>
-                <a href="#surfaces">Source Code Repositories</a>
-                <a href="#surfaces">White-Box Hybrid Estates</a>
-                <a href="#compliance">Compliance Automation</a>
+                <h4>Resources</h4>
+                <a href="#coverage">Coverage</a>
+                <a href="#deliverables">Sample report</a>
+                <a href="#faq">FAQ</a>
+                <Link href="/dashboard">Dashboard</Link>
               </div>
               <div className={styles.footerCol}>
-                <div className={styles.footerColTitle}>Governance &amp; Trust</div>
-                <a href="#compliance">SOC 2 &amp; ISO 27001</a>
-                <a href="#">Responsible Disclosure</a>
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
+                <h4>Legal</h4>
+                <a href="#">Responsible disclosure</a>
+                <a href="#">Privacy policy</a>
+                <a href="#">Terms of service</a>
               </div>
             </div>
           </div>
           <div className={styles.footerBottom}>
-            <p>&copy; {new Date().getFullYear()} RedSuture by NextAI Studios. All rights reserved.</p>
-            <p className={styles.footerWarning}>
-              Authorized penetration testing only. Scan targets strictly within your organizational ownership or documented legal authorization.
-            </p>
+            <p>&copy; {new Date().getFullYear()} NextAI Studios. All rights reserved.</p>
+            <p>For authorized security testing only. Scan only assets you own or have written permission to test.</p>
           </div>
         </div>
       </footer>

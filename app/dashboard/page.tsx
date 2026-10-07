@@ -1,7 +1,13 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import styles from './dashboard.module.css';
+import Logo from '../components/Logo';
+import {
+  GridIcon, RadarIcon, AlertIcon, ClockIcon, SidebarIcon, PlusIcon, CheckIcon, ArrowRightIcon,
+  ChevronRightIcon, DownloadIcon, CopyIcon, GlobeIcon, GitIcon, FolderIcon, LayersIcon, ListIcon,
+  FileCheckIcon, type IconProps,
+} from '../components/icons';
 
 const MOCK_SCANS = [
   {
@@ -113,6 +119,70 @@ const MOCK_VULNS = [
   },
 ];
 
+type Tab = 'overview' | 'new-scan' | 'findings' | 'history';
+type ScanType = 'live-url' | 'github-repo' | 'local-dir' | 'whitebox' | 'target-list';
+type ScanMode = 'quick' | 'standard' | 'deep';
+type Severity = 'critical' | 'high' | 'medium' | 'low';
+
+const NAV_ITEMS: { id: Tab; label: string; short: string; icon: (p: IconProps) => React.ReactElement }[] = [
+  { id: 'overview', label: 'Overview', short: 'Overview', icon: GridIcon },
+  { id: 'new-scan', label: 'New scan', short: 'New scan', icon: RadarIcon },
+  { id: 'findings', label: 'Findings', short: 'Findings', icon: AlertIcon },
+  { id: 'history', label: 'Scan history', short: 'History', icon: ClockIcon },
+];
+
+const PAGE_META: Record<Tab, { title: string; sub: string }> = {
+  overview: { title: 'Overview', sub: 'Your security posture across all targets' },
+  'new-scan': { title: 'New scan', sub: 'Configure an autonomous penetration test' },
+  findings: { title: 'Findings', sub: 'Verified vulnerabilities and remediation' },
+  history: { title: 'Scan history', sub: 'Past scans and remediation packages' },
+};
+
+const STATS: { label: string; value: string; hint: string; tone: 'neutral' | 'critical' | 'high' | 'good'; icon: (p: IconProps) => React.ReactElement }[] = [
+  { label: 'Completed scans', value: '7', hint: 'Across 3 targets', tone: 'neutral', icon: RadarIcon },
+  { label: 'Critical findings', value: '3', hint: 'Verified with PoC', tone: 'critical', icon: AlertIcon },
+  { label: 'High findings', value: '10', hint: 'Verified with PoC', tone: 'high', icon: AlertIcon },
+  { label: 'Fixes generated', value: '12', hint: 'Patches & guides ready', tone: 'good', icon: FileCheckIcon },
+];
+
+const TARGET_TYPES: { id: ScanType; label: string; badge: string; desc: string; icon: (p: IconProps) => React.ReactElement }[] = [
+  { id: 'live-url', label: 'Web application', badge: 'Black-box', desc: 'Production or staging URLs, SPAs and public API gateways.', icon: GlobeIcon },
+  { id: 'github-repo', label: 'Git repository', badge: 'Source', desc: 'GitHub, GitLab or Bitbucket — logic bugs, secrets and taint flaws.', icon: GitIcon },
+  { id: 'local-dir', label: 'Local directory', badge: 'Pre-deploy', desc: 'Application folders and packages before they ship.', icon: FolderIcon },
+  { id: 'whitebox', label: 'White-box hybrid', badge: 'Deepest', desc: 'Source code and a live URL together for code-informed exploits.', icon: LayersIcon },
+  { id: 'target-list', label: 'Target list', badge: 'Bulk', desc: 'Many services, endpoints or hosts in one run.', icon: ListIcon },
+];
+
+const MODEL_OPTIONS = [
+  { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude', desc: 'Deep code comprehension and precise fix generation' },
+  { value: 'openai/gpt-4o', label: 'OpenAI', desc: 'Fast exploratory payloads and dynamic fuzzing' },
+  { value: 'ensemble', label: 'Hybrid ensemble', desc: 'Claude code tracing with OpenAI attack hypotheses' },
+];
+
+const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string }[] = [
+  { value: 'quick', label: 'Quick', time: '~5 min', desc: 'OWASP surface and rapid parameter testing' },
+  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Full auth, injection and API mapping' },
+  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Multi-step exploit chains and white-box correlation' },
+];
+
+const SEVERITY_LABEL: Record<Severity, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+
+function SeverityPill({ level, count }: { level: Severity; count?: number }) {
+  return (
+    <span className={`${styles.sev} ${styles[`sev_${level}`]}`}>
+      {count !== undefined && <strong>{count}</strong>} {SEVERITY_LABEL[level]}
+    </span>
+  );
+}
+
+function diffLineClass(line: string) {
+  if (line.startsWith('+++') || line.startsWith('---')) return styles.diffFile;
+  if (line.startsWith('@@')) return styles.diffHunk;
+  if (line.startsWith('+')) return styles.diffAdd;
+  if (line.startsWith('-')) return styles.diffDel;
+  return styles.diffCtx;
+}
+
 type ScanStatus = 'idle' | 'running' | 'complete' | 'error';
 
 interface ScanProgress {
@@ -125,8 +195,8 @@ interface ScanProgress {
 }
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'new-scan' | 'history' | 'findings'>('overview');
-  const [scanType, setScanType] = useState<'live-url' | 'github-repo' | 'local-dir' | 'whitebox' | 'target-list'>('live-url');
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [scanType, setScanType] = useState<ScanType>('live-url');
   
   // Target inputs
   const [targetUrl, setTargetUrl] = useState('');
@@ -138,7 +208,7 @@ export default function DashboardPage() {
   
   // Model & scan options
   const [aiModel, setAiModel] = useState('anthropic/claude-sonnet-4-6');
-  const [scanMode, setScanMode] = useState<'quick' | 'standard' | 'deep'>('quick');
+  const [scanMode, setScanMode] = useState<ScanMode>('quick');
   const [instructions, setInstructions] = useState('');
 
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
@@ -249,147 +319,152 @@ export default function DashboardPage() {
 
       setActiveRunId(data.runId);
       pollRef.current = setInterval(() => pollScan(data.runId), 5000);
-    } catch (e: any) {
-      setScanProgress(prev => ({ ...prev, status: 'error', phase: `Failed: ${e.message}` }));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setScanProgress(prev => ({ ...prev, status: 'error', phase: `Failed: ${message}` }));
     }
   };
 
-  const scoreColor = (score: number) => {
-    if (score < 40) return 'var(--red-bright)';
-    if (score < 70) return 'var(--orange)';
-    return 'var(--green)';
+  const scoreClass = (score: number) => {
+    if (score < 40) return styles.scoreBad;
+    if (score < 70) return styles.scoreWarn;
+    return styles.scoreGood;
   };
 
-  const severityBadge = (s: string) => {
-    if (s === 'critical') return 'badge-red';
-    if (s === 'high') return 'badge-orange';
-    if (s === 'medium') return 'badge-yellow';
-    return 'badge-gray';
+  const goToFindings = (scan: typeof MOCK_SCANS[0]) => {
+    setSelectedScan(scan);
+    setActiveTab('findings');
   };
+
+  const activeTarget = TARGET_TYPES.find(t => t.id === scanType)!;
+  const pageMeta = PAGE_META[activeTab];
 
   return (
-    <div className={styles.layout}>
-      {copyToast && <div className={styles.toast}>{copyToast}</div>}
+    <div className={`${styles.layout} ${sidebarCollapsed ? styles.layoutCollapsed : ''}`}>
+      {copyToast && (
+        <div className={styles.toast} role="status">
+          <CheckIcon size={14} /> {copyToast}
+        </div>
+      )}
 
       {/* Sidebar */}
-      <aside className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
+      <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <Link href="/" className={styles.logo}>
-            <div className={styles.logoBadge}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            {!sidebarCollapsed && <span className={styles.logoText}>RedSuture</span>}
+          <Link href="/" aria-label="RedSuture home">
+            <Logo showText={!sidebarCollapsed} />
           </Link>
-          <button className={styles.collapseBtn} onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label="Toggle Sidebar">
-            {sidebarCollapsed ? '→' : '←'}
+          <button
+            className={styles.collapseBtn}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <SidebarIcon size={16} />
           </button>
         </div>
 
-        <nav className={styles.sidebarNav}>
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'new-scan', label: 'New Security Scan' },
-            { id: 'findings', label: 'Findings & Remediation' },
-            { id: 'history', label: 'Audit History' },
-          ].map(item => (
+        <nav className={styles.sidebarNav} aria-label="Dashboard">
+          {NAV_ITEMS.map(item => (
             <button
               key={item.id}
               className={`${styles.navItem} ${activeTab === item.id ? styles.navItemActive : ''}`}
-              onClick={() => setActiveTab(item.id as typeof activeTab)}
+              onClick={() => setActiveTab(item.id)}
+              aria-current={activeTab === item.id ? 'page' : undefined}
+              title={sidebarCollapsed ? item.label : undefined}
             >
-              {!sidebarCollapsed && <span>{item.label}</span>}
+              <item.icon size={18} />
+              {!sidebarCollapsed && <span className={styles.navLabel}>{item.label}</span>}
+              {!sidebarCollapsed && item.id === 'findings' && (
+                <span className={styles.navCount}>{MOCK_VULNS.length}</span>
+              )}
             </button>
           ))}
         </nav>
 
         <div className={styles.sidebarFooter}>
           {scanProgress.status === 'running' && (
-            <div className={styles.scanStatus}>
-              <div className={styles.scanStatusDot} />
+            <button className={styles.scanStatus} onClick={() => setActiveTab('overview')} title="Scan running">
+              <span className={styles.scanStatusDot} />
               {!sidebarCollapsed && (
-                <div className={styles.scanStatusText}>
-                  <span>Autonomous Scan Running</span>
+                <span className={styles.scanStatusText}>
+                  <span>Scan running</span>
                   <span>{scanProgress.progress}%</span>
-                </div>
+                </span>
               )}
-            </div>
+            </button>
           )}
           <div className={styles.userCard}>
             <div className={styles.userAvatar}>DM</div>
             {!sidebarCollapsed && (
               <div className={styles.userInfo}>
-                <span className={styles.userName}>Enterprise Account</span>
-                <span className={styles.userPlan}>Managed Tier</span>
+                <span className={styles.userName}>Enterprise account</span>
+                <span className={styles.userPlan}>Managed tier</span>
               </div>
             )}
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className={styles.main}>
-        {/* Top Bar */}
         <header className={styles.topBar}>
           <div className={styles.topBarLeft}>
-            <h1 className={styles.pageTitle}>
-              {activeTab === 'overview' && 'Security Posture Overview'}
-              {activeTab === 'new-scan' && 'Configure Managed Assessment'}
-              {activeTab === 'findings' && 'Validated Vulnerabilities & Remediation'}
-              {activeTab === 'history' && 'Audit History & Compliance Archives'}
-            </h1>
+            <Link href="/" className={styles.mobileLogo} aria-label="RedSuture home">
+              <Logo showText={false} />
+            </Link>
+            <div>
+              <h1 className={styles.pageTitle}>{pageMeta.title}</h1>
+              <p className={styles.pageSub}>{pageMeta.sub}</p>
+            </div>
           </div>
           <div className={styles.topBarRight}>
-            <div className={styles.aiBadge}>
-              <span className={styles.pulseGreen} />
-              <span>AI Engine: Claude 3.7 &amp; OpenAI</span>
-            </div>
-            <button className="btn-primary" onClick={() => setActiveTab('new-scan')} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-              + Launch Scan
-            </button>
+            <span className={styles.engineBadge}>
+              <span className={styles.engineDot} /> Engine online
+            </span>
+            {activeTab !== 'new-scan' && (
+              <button className="btn-primary" onClick={() => setActiveTab('new-scan')}>
+                <PlusIcon size={16} /> New scan
+              </button>
+            )}
           </div>
         </header>
 
-        <div className={styles.content}>
+        <nav className={styles.mobileTabs} aria-label="Dashboard sections">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.id}
+              className={`${styles.mobileTab} ${activeTab === item.id ? styles.mobileTabActive : ''}`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              {item.short}
+            </button>
+          ))}
+        </nav>
 
-          {/* OVERVIEW TAB */}
+        <div className={styles.content}>
+          {/* OVERVIEW */}
           {activeTab === 'overview' && (
-            <div className={styles.overview}>
-              {/* Stats */}
+            <div className={styles.stack}>
               <div className={styles.statsGrid}>
-                {[
-                  { label: 'Completed Assessments', value: '7', color: 'var(--text-primary)' },
-                  { label: 'Validated Critical Risks', value: '3', color: 'var(--red-bright)' },
-                  { label: 'High Severity Findings', value: '10', color: 'var(--orange)' },
-                  { label: 'Remediation Guides Generated', value: '12', color: 'var(--green)' },
-                ].map((s, i) => (
-                  <div key={i} className={styles.statCard}>
-                    <div className={styles.statValue} style={{ color: s.color }}>{s.value}</div>
-                    <div className={styles.statLabel}>{s.label}</div>
+                {STATS.map(s => (
+                  <div key={s.label} className={styles.statCard}>
+                    <div className={styles.statTop}>
+                      <span className={styles.statLabel}>{s.label}</span>
+                      <span className={`${styles.statIcon} ${styles[`tone_${s.tone}`]}`}><s.icon size={16} /></span>
+                    </div>
+                    <div className={styles.statValue}>{s.value}</div>
+                    <div className={styles.statHint}>{s.hint}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Active scan log */}
               {scanProgress.status !== 'idle' && (
-                <div className={styles.liveCard}>
-                  <div className={styles.liveCardHeader}>
+                <section className={styles.panel}>
+                  <div className={styles.liveHeader}>
                     <div className={styles.liveIndicator}>
-                      {scanProgress.status === 'running' && (
-                        <>
-                          <div className={styles.liveDot} />
-                          <span>Autonomous Agents Active</span>
-                        </>
-                      )}
-                      {scanProgress.status === 'complete' && (
-                        <>
-                          <span style={{ color: 'var(--green)' }}>✓</span>
-                          <span style={{ color: 'var(--green)' }}>Assessment Complete</span>
-                        </>
-                      )}
+                      {scanProgress.status === 'running' && <><span className={styles.liveDot} /> Scan in progress</>}
+                      {scanProgress.status === 'complete' && <span className={styles.liveDone}><CheckIcon size={14} /> Scan complete</span>}
+                      {scanProgress.status === 'error' && <span className={styles.liveError}><AlertIcon size={14} /> Scan failed</span>}
                     </div>
                     <span className={styles.livePhase}>{scanProgress.phase}</span>
                     <span className={styles.liveProgress}>{scanProgress.progress}%</span>
@@ -400,7 +475,7 @@ export default function DashboardPage() {
                   <div className={styles.scanLog} ref={logRef}>
                     {scanProgress.messages.map((msg, i) => (
                       <div key={i} className={styles.logLine}>
-                        <span className={styles.logTime}>{msg.split(']')[0]}]</span>
+                        <span className={styles.logTag}>{msg.split(']')[0]}]</span>
                         <span className={`${styles.logMsg} ${msg.includes('AGENT') || msg.includes('AI') ? styles.logAgent : msg.includes('complete') ? styles.logSuccess : ''}`}>
                           {msg.split(']')[1]}
                         </span>
@@ -408,500 +483,404 @@ export default function DashboardPage() {
                     ))}
                   </div>
                   <div className={styles.scanMeta}>
-                    <span>Findings: {scanProgress.findings} validated</span>
-                    <span>AI Reasoning Tokens: {(scanProgress.tokens / 1000).toFixed(0)}K</span>
-                    <span>Zero False-Positive Attestation</span>
+                    <span>{scanProgress.findings} verified findings</span>
+                    <span>{(scanProgress.tokens / 1000).toFixed(0)}K tokens used</span>
+                    {activeRunId && <span>Run <code>{activeRunId}</code></span>}
                   </div>
-                </div>
+                </section>
               )}
 
-              {/* Recent scans */}
-              <div className={styles.section}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>Recent Assessments</h2>
-                  <button className="btn-ghost" onClick={() => setActiveTab('history')} style={{ fontSize: '0.8rem' }}>View all history →</button>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>Recent scans</h2>
+                  <button className="btn-ghost" onClick={() => setActiveTab('history')}>
+                    View all <ArrowRightIcon size={14} />
+                  </button>
                 </div>
-                <div className={styles.scanList}>
+                <ul className={styles.scanList}>
                   {MOCK_SCANS.map(scan => (
-                    <div key={scan.id} className={styles.scanRow} onClick={() => { setSelectedScan(scan); setActiveTab('findings'); }}>
-                      <div className={styles.scanTarget}>
-                        <div className={styles.targetTypeBadgeMini}>{scan.targetType}</div>
-                        <div>
-                          <div className={styles.scanTargetUrl}>{scan.target}</div>
-                          <div className={styles.scanDate}>{scan.date} · Execution: {scan.duration}</div>
-                        </div>
-                      </div>
-                      <div className={styles.scanBadges}>
-                        {scan.critical > 0 && <span className="badge badge-red">{scan.critical} Critical</span>}
-                        {scan.high > 0 && <span className="badge badge-orange">{scan.high} High</span>}
-                        {scan.medium > 0 && <span className="badge badge-yellow">{scan.medium} Medium</span>}
-                      </div>
-                      <div className={styles.scanScore} style={{ color: scoreColor(scan.score) }}>
-                        {scan.score}/100
-                      </div>
-                      <button className="btn-ghost" style={{ fontSize: '0.8rem' }}>Review Guides →</button>
-                    </div>
+                    <li key={scan.id}>
+                      <button className={styles.scanRow} onClick={() => goToFindings(scan)}>
+                        <span className={styles.scanTarget}>
+                          <span className={styles.scanTargetUrl}>{scan.target}</span>
+                          <span className={styles.scanDate}>{scan.targetType} · {scan.date} · {scan.duration}</span>
+                        </span>
+                        <span className={styles.scanBadges}>
+                          {scan.critical > 0 && <SeverityPill level="critical" count={scan.critical} />}
+                          {scan.high > 0 && <SeverityPill level="high" count={scan.high} />}
+                          {scan.medium > 0 && <SeverityPill level="medium" count={scan.medium} />}
+                        </span>
+                        <span className={`${styles.scanScore} ${scoreClass(scan.score)}`}>{scan.score}<small>/100</small></span>
+                        <ChevronRightIcon className={styles.rowChevron} />
+                      </button>
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </section>
             </div>
           )}
 
-          {/* NEW SCAN TAB */}
+          {/* NEW SCAN */}
           {activeTab === 'new-scan' && (
             <div className={styles.newScan}>
-              <div className={styles.scanForm}>
-                <div className={styles.targetTypeHeader}>
-                  <h2 className={styles.formSectionTitle}>Select Target Architecture</h2>
-                  <p className={styles.formSectionDesc}>
-                    Specify which asset types you want our autonomous AI red team to assess on your behalf.
-                  </p>
+              <section className={styles.formSection}>
+                <div className={styles.formSectionHead}>
+                  <span className={styles.stepBadge}>1</span>
+                  <div>
+                    <h2 className={styles.formSectionTitle}>Choose a target</h2>
+                    <p className={styles.formSectionDesc}>What should the agents test?</p>
+                  </div>
                 </div>
-
-                {/* ELEGANT BALANCED TARGET ARCHITECTURE GRID */}
-                <div className={styles.targetGrid}>
-                  {[
-                    {
-                      id: 'live-url',
-                      label: 'Live Web Application',
-                      badge: 'Black-box DAST',
-                      desc: 'Scan production or staging URLs, single-page apps (React/Next.js), and public API gateways.',
-                    },
-                    {
-                      id: 'github-repo',
-                      label: 'Remote Git Repository',
-                      badge: 'Source SAST + Logic',
-                      desc: 'Codebase analysis across GitHub, GitLab, or Bitbucket for logic bugs, secrets, and taint flaws.',
-                    },
-                    {
-                      id: 'local-dir',
-                      label: 'Local Codebase Directory',
-                      badge: 'Internal QA Workspace',
-                      desc: 'Direct analysis of local application folders and microservice packages before deployment.',
-                    },
-                    {
-                      id: 'whitebox',
-                      label: 'White-Box Correlated Multi-Target',
-                      badge: 'Hybrid Correlation',
-                      desc: 'Correlate running live endpoints with source code logic for deepest exploit validation.',
-                    },
-                    {
-                      id: 'target-list',
-                      label: 'Bulk Scope Target List',
-                      badge: 'Enterprise Estate List',
-                      desc: 'Batch assessment across multiple microservices, endpoints, and hosts from a target file.',
-                    },
-                  ].map(t => (
+                <div className={styles.targetGrid} role="radiogroup" aria-label="Target type">
+                  {TARGET_TYPES.map(t => (
                     <button
                       key={t.id}
                       type="button"
+                      role="radio"
+                      aria-checked={scanType === t.id}
                       className={`${styles.targetCard} ${scanType === t.id ? styles.targetCardActive : ''}`}
-                      onClick={() => setScanType(t.id as typeof scanType)}
+                      onClick={() => setScanType(t.id)}
                     >
-                      <div className={styles.targetCardHeader}>
-                        <span className={styles.targetCardLabel}>{t.label}</span>
+                      <span className={styles.targetCardTop}>
+                        <span className={styles.targetCardIcon}><t.icon size={18} /></span>
                         <span className={styles.targetCardBadge}>{t.badge}</span>
-                      </div>
+                      </span>
+                      <span className={styles.targetCardLabel}>{t.label}</span>
                       <span className={styles.targetCardDesc}>{t.desc}</span>
                     </button>
                   ))}
                 </div>
+              </section>
 
-                {/* DYNAMIC INPUTS BASED ON SELECTED TARGET TYPE */}
-                <div className={styles.targetInputContainer}>
-                  {scanType === 'live-url' && (
-                    <div className={styles.targetInputGroup}>
-                      <label className={styles.inputLabel}>
-                        Target Application URL
-                        <span className={styles.inputHint}>HTTPS address of the live web app or API</span>
-                      </label>
-                      <input
-                        type="url"
-                        className={styles.targetField}
-                        placeholder="https://app.enterprise-demo.io"
-                        value={targetUrl}
-                        onChange={e => setTargetUrl(e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {scanType === 'github-repo' && (
-                    <div className={styles.targetInputGroup}>
-                      <label className={styles.inputLabel}>
-                        Remote Repository URL
-                        <span className={styles.inputHint}>GitHub, GitLab, or Bitbucket HTTPS link</span>
-                      </label>
-                      <input
-                        type="url"
-                        className={styles.targetField}
-                        placeholder="https://github.com/acme-corp/payment-service"
-                        value={targetRepo}
-                        onChange={e => setTargetRepo(e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {scanType === 'local-dir' && (
-                    <div className={styles.targetInputGroup}>
-                      <label className={styles.inputLabel}>
-                        Local Workspace Path
-                        <span className={styles.inputHint}>Relative or absolute directory path to scan</span>
-                      </label>
-                      <input
-                        type="text"
-                        className={styles.targetField}
-                        placeholder="./packages/api-server"
-                        value={targetDir}
-                        onChange={e => setTargetDir(e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {scanType === 'whitebox' && (
-                    <div className={styles.whiteboxGrid}>
-                      <div className={styles.targetInputGroup}>
-                        <label className={styles.inputLabel}>
-                          1. Source Repository
-                          <span className={styles.inputHint}>Codebase for taint &amp; logic analysis</span>
-                        </label>
-                        <input
-                          type="url"
-                          className={styles.targetField}
-                          placeholder="https://github.com/acme/auth-api"
-                          value={whiteboxRepo}
-                          onChange={e => setWhiteboxRepo(e.target.value)}
-                        />
-                      </div>
-                      <div className={styles.targetInputGroup}>
-                        <label className={styles.inputLabel}>
-                          2. Live Target URL
-                          <span className={styles.inputHint}>Live running application to execute PoC</span>
-                        </label>
-                        <input
-                          type="url"
-                          className={styles.targetField}
-                          placeholder="https://staging.acme.com"
-                          value={whiteboxUrl}
-                          onChange={e => setWhiteboxUrl(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {scanType === 'target-list' && (
-                    <div className={styles.targetInputGroup}>
-                      <label className={styles.inputLabel}>
-                        Target Scope Entries
-                        <span className={styles.inputHint}>One target per non-empty line (URLs, repos, or hosts)</span>
-                      </label>
-                      <textarea
-                        className={styles.targetListArea}
-                        rows={6}
-                        placeholder={`https://api.acme.com\nhttps://auth.acme.com\nhttps://github.com/acme/billing\nhttps://qa-cluster.acme.internal`}
-                        value={targetListContent}
-                        onChange={e => setTargetListContent(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.optionsGrid}>
-                  <div className={styles.optionCard}>
-                    <div className={styles.optionHeader}>
-                      <span className={styles.optionLabel}>AI Reasoning Architecture</span>
-                      <span className={styles.modeBadge}>FRONTIER ENSEMBLE</span>
-                    </div>
-                    <div className={styles.radioGroup}>
-                      {[
-                        { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude Sonnet & Opus', desc: 'Deepest logic comprehension & code diff synthesis' },
-                        { value: 'openai/gpt-4o', label: 'OpenAI Frontier Models', desc: 'Rapid exploratory payload formulation & dynamic fuzzing' },
-                        { value: 'ensemble', label: 'Hybrid Model Ensemble (Recommended)', desc: 'Combines Claude code tracing with OpenAI adversarial hypotheses' },
-                      ].map(m => (
-                        <label key={m.value} className={styles.radioLabel}>
-                          <input
-                            type="radio"
-                            name="aiModel"
-                            checked={aiModel === m.value}
-                            onChange={() => setAiModel(m.value)}
-                            className={styles.radio}
-                          />
-                          <div className={styles.radioContent}>
-                            <span className={styles.radioTitle}>{m.label}</span>
-                            <span className={styles.radioDesc}>{m.desc}</span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.optionCard}>
-                    <div className={styles.optionHeader}>
-                      <span className={styles.optionLabel}>Scan Depth Mode</span>
-                      <span className={styles.modeBadge}>{scanMode.toUpperCase()}</span>
-                    </div>
-                    <div className={styles.radioGroup}>
-                      {[
-                        { value: 'quick', label: 'Quick Scan', desc: 'Standard OWASP surface & rapid parameter testing (~5m)' },
-                        { value: 'standard', label: 'Standard Pentest', desc: 'Full authentication, injection & API mapping (~15m)' },
-                        { value: 'deep', label: 'Deep Autonomous Audit', desc: 'Complex multi-step exploit chains & whitebox correlation (~45m)' },
-                      ].map(opt => (
-                        <label key={opt.value} className={styles.radioLabel}>
-                          <input
-                            type="radio"
-                            name="mode"
-                            checked={scanMode === opt.value}
-                            onChange={() => setScanMode(opt.value as typeof scanMode)}
-                            className={styles.radio}
-                          />
-                          <div className={styles.radioContent}>
-                            <span className={styles.radioTitle}>{opt.label}</span>
-                            <span className={styles.radioDesc}>{opt.desc}</span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+              <section className={styles.formSection}>
+                <div className={styles.formSectionHead}>
+                  <span className={styles.stepBadge}>2</span>
+                  <div>
+                    <h2 className={styles.formSectionTitle}>Target details</h2>
+                    <p className={styles.formSectionDesc}>Only scan assets you own or have written permission to test.</p>
                   </div>
                 </div>
 
-                <div className={styles.optionCard} style={{ width: '100%' }}>
-                  <div className={styles.optionHeader}>
-                    <span className={styles.optionLabel}>Custom Engagement Instructions (Optional)</span>
-                    <span className={styles.inputHint}>Specify scope boundaries or authentication parameters</span>
+                {scanType === 'live-url' && (
+                  <div className={styles.field}>
+                    <label htmlFor="target-url" className={styles.inputLabel}>
+                      Application URL <span className={styles.inputHint}>HTTPS address of the web app or API</span>
+                    </label>
+                    <input id="target-url" type="url" className={styles.input} placeholder="https://app.example.com" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} />
                   </div>
+                )}
+
+                {scanType === 'github-repo' && (
+                  <div className={styles.field}>
+                    <label htmlFor="target-repo" className={styles.inputLabel}>
+                      Repository URL <span className={styles.inputHint}>GitHub, GitLab or Bitbucket</span>
+                    </label>
+                    <input id="target-repo" type="url" className={styles.input} placeholder="https://github.com/acme-corp/payment-service" value={targetRepo} onChange={e => setTargetRepo(e.target.value)} />
+                  </div>
+                )}
+
+                {scanType === 'local-dir' && (
+                  <div className={styles.field}>
+                    <label htmlFor="target-dir" className={styles.inputLabel}>
+                      Directory path <span className={styles.inputHint}>Relative or absolute path</span>
+                    </label>
+                    <input id="target-dir" type="text" className={styles.input} placeholder="./packages/api-server" value={targetDir} onChange={e => setTargetDir(e.target.value)} />
+                  </div>
+                )}
+
+                {scanType === 'whitebox' && (
+                  <div className={styles.twoCol}>
+                    <div className={styles.field}>
+                      <label htmlFor="wb-repo" className={styles.inputLabel}>
+                        Source repository <span className={styles.inputHint}>For code analysis</span>
+                      </label>
+                      <input id="wb-repo" type="url" className={styles.input} placeholder="https://github.com/acme/auth-api" value={whiteboxRepo} onChange={e => setWhiteboxRepo(e.target.value)} />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="wb-url" className={styles.inputLabel}>
+                        Live URL <span className={styles.inputHint}>Where exploits are validated</span>
+                      </label>
+                      <input id="wb-url" type="url" className={styles.input} placeholder="https://staging.acme.com" value={whiteboxUrl} onChange={e => setWhiteboxUrl(e.target.value)} />
+                    </div>
+                  </div>
+                )}
+
+                {scanType === 'target-list' && (
+                  <div className={styles.field}>
+                    <label htmlFor="target-list" className={styles.inputLabel}>
+                      Targets <span className={styles.inputHint}>One per line · lines starting with # are ignored</span>
+                    </label>
+                    <textarea
+                      id="target-list"
+                      className={`${styles.input} ${styles.textarea}`}
+                      rows={6}
+                      placeholder={`https://api.acme.com\nhttps://auth.acme.com\nhttps://github.com/acme/billing`}
+                      value={targetListContent}
+                      onChange={e => setTargetListContent(e.target.value)}
+                    />
+                  </div>
+                )}
+              </section>
+
+              <section className={styles.formSection}>
+                <div className={styles.formSectionHead}>
+                  <span className={styles.stepBadge}>3</span>
+                  <div>
+                    <h2 className={styles.formSectionTitle}>Configure the scan</h2>
+                    <p className={styles.formSectionDesc}>Pick the reasoning model and how deep the agents should go.</p>
+                  </div>
+                </div>
+                <div className={styles.twoCol}>
+                  <fieldset className={styles.optionGroup}>
+                    <legend className={styles.optionLegend}>AI model</legend>
+                    {MODEL_OPTIONS.map(m => (
+                      <label key={m.value} className={`${styles.option} ${aiModel === m.value ? styles.optionActive : ''}`}>
+                        <input type="radio" name="aiModel" checked={aiModel === m.value} onChange={() => setAiModel(m.value)} className={styles.radio} />
+                        <span className={styles.optionText}>
+                          <span className={styles.optionTitle}>{m.label}</span>
+                          <span className={styles.optionDesc}>{m.desc}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </fieldset>
+                  <fieldset className={styles.optionGroup}>
+                    <legend className={styles.optionLegend}>Depth</legend>
+                    {DEPTH_OPTIONS.map(opt => (
+                      <label key={opt.value} className={`${styles.option} ${scanMode === opt.value ? styles.optionActive : ''}`}>
+                        <input type="radio" name="mode" checked={scanMode === opt.value} onChange={() => setScanMode(opt.value)} className={styles.radio} />
+                        <span className={styles.optionText}>
+                          <span className={styles.optionTitle}>{opt.label} <span className={styles.optionTime}>{opt.time}</span></span>
+                          <span className={styles.optionDesc}>{opt.desc}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </fieldset>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="instructions" className={styles.inputLabel}>
+                    Instructions <span className={styles.inputHint}>Optional · scope limits, credentials, focus areas</span>
+                  </label>
                   <textarea
-                    className={styles.instructionField}
-                    placeholder={'Focus on authorization flows on /api/v2 and token privilege escalation.\nExclude /admin/delete-database testing.'}
+                    id="instructions"
+                    className={`${styles.input} ${styles.textarea}`}
+                    placeholder={'Focus on authorization flows under /api/v2 and token privilege escalation.\nDo not test /admin/delete-database.'}
                     value={instructions}
                     onChange={e => setInstructions(e.target.value)}
                     rows={3}
                   />
                 </div>
+              </section>
 
-                <div className={styles.scanActions}>
-                  <div className={styles.costEstimate}>
-                    <span>Target Scope:</span>
-                    <span className={styles.costAmount}>{scanType.toUpperCase()}</span>
-                    <span className={styles.costNote}>— Generates downloadable step-by-step guides &amp; patches</span>
-                  </div>
-                  <button
-                    className="btn-primary"
-                    onClick={startScan}
-                    disabled={scanProgress.status === 'running'}
-                    style={{ padding: '14px 32px', fontSize: '0.95rem' }}
-                  >
-                    {scanProgress.status === 'running' ? 'Assessment In Progress...' : 'Launch Managed Assessment'}
-                  </button>
+              <div className={styles.launchBar}>
+                <div className={styles.launchSummary}>
+                  <activeTarget.icon size={16} />
+                  <span><strong>{activeTarget.label}</strong> · {DEPTH_OPTIONS.find(d => d.value === scanMode)?.label} scan</span>
                 </div>
+                <button className="btn-primary" onClick={startScan} disabled={scanProgress.status === 'running'}>
+                  {scanProgress.status === 'running' ? 'Scan in progress…' : <>Launch scan <ArrowRightIcon size={14} /></>}
+                </button>
               </div>
             </div>
           )}
 
-          {/* FINDINGS TAB */}
+          {/* FINDINGS */}
           {activeTab === 'findings' && (
-            <div className={styles.findings}>
-              <div className={styles.findingsHeader}>
+            <div className={styles.stack}>
+              <section className={styles.findingsHeader}>
                 <div className={styles.findingsMeta}>
                   <span className={styles.findingsTarget}>{selectedScan.target}</span>
-                  <span className={styles.findingsDate}>{selectedScan.date} · Managed AI Assessment</span>
+                  <span className={styles.findingsDate}>{selectedScan.targetType} · {selectedScan.date} · {selectedScan.duration}</span>
                 </div>
                 <div className={styles.findingsBadges}>
-                  <span className="badge badge-red">{selectedScan.critical} Critical</span>
-                  <span className="badge badge-orange">{selectedScan.high} High</span>
-                  <span className="badge badge-yellow">{selectedScan.medium} Medium</span>
-                  <span className="badge badge-gray">{selectedScan.low} Low</span>
+                  <SeverityPill level="critical" count={selectedScan.critical} />
+                  <SeverityPill level="high" count={selectedScan.high} />
+                  <SeverityPill level="medium" count={selectedScan.medium} />
+                  <SeverityPill level="low" count={selectedScan.low} />
                 </div>
                 <div className={styles.securityScore}>
-                  <span>Security Score</span>
-                  <span className={styles.scoreValue} style={{ color: scoreColor(selectedScan.score) }}>
-                    {selectedScan.score}/100
-                  </span>
+                  <span>Security score</span>
+                  <span className={`${styles.scoreValue} ${scoreClass(selectedScan.score)}`}>{selectedScan.score}<small>/100</small></span>
                 </div>
-              </div>
+              </section>
 
               <div className={styles.findingsLayout}>
-                <div className={styles.vulnList}>
+                <ul className={styles.vulnList}>
                   {MOCK_VULNS.map(v => (
-                    <div
-                      key={v.id}
-                      className={`${styles.vulnCard} ${selectedVuln?.id === v.id ? styles.vulnCardSelected : ''}`}
-                      onClick={() => setSelectedVuln(v)}
-                    >
-                      <div className={`badge ${severityBadge(v.severity)}`} style={{ fontSize: '0.7rem' }}>
-                        {v.severity.toUpperCase()}
-                      </div>
-                      <div className={styles.vulnTitle}>{v.title}</div>
-                      <div className={styles.vulnMeta}>
-                        <span className={styles.vulnEndpoint}>{v.endpoint}</span>
-                        <span className={styles.cvssScore}>CVSS {v.cvss}</span>
-                      </div>
-                    </div>
+                    <li key={v.id}>
+                      <button
+                        className={`${styles.vulnCard} ${selectedVuln?.id === v.id ? styles.vulnCardSelected : ''}`}
+                        onClick={() => setSelectedVuln(v)}
+                        aria-current={selectedVuln?.id === v.id ? 'true' : undefined}
+                      >
+                        <span className={styles.vulnCardTop}>
+                          <SeverityPill level={v.severity as Severity} />
+                          <span className={styles.cvssScore}>CVSS {v.cvss}</span>
+                        </span>
+                        <span className={styles.vulnTitle}>{v.title}</span>
+                        <code className={styles.vulnEndpoint}>{v.endpoint}</code>
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
 
-                {selectedVuln ? (
-                  <div className={styles.vulnDetail}>
-                    <div className={styles.vulnDetailHeader}>
-                      <div className="badge badge-red" style={{ fontSize: '0.75rem' }}>
-                        {selectedVuln.severity.toUpperCase()} · CVSS {selectedVuln.cvss}
-                      </div>
-                      <h2 className={styles.vulnDetailTitle}>{selectedVuln.title}</h2>
-                      <div className={styles.vulnDetailMeta}>
-                        <span>Vulnerability Category: {selectedVuln.type}</span>
-                        <span>Target Handler / Endpoint: <code className={styles.code}>{selectedVuln.endpoint}</code></span>
-                      </div>
+                <article className={styles.vulnDetail}>
+                  <header className={styles.vulnDetailHeader}>
+                    <div className={styles.vulnDetailTags}>
+                      <SeverityPill level={selectedVuln.severity as Severity} />
+                      <span className={styles.detailTag}>CVSS {selectedVuln.cvss}</span>
+                      <span className={styles.detailTagOk}><CheckIcon size={12} /> PoC verified</span>
                     </div>
+                    <h2 className={styles.vulnDetailTitle}>{selectedVuln.title}</h2>
+                    <dl className={styles.vulnDetailMeta}>
+                      <div><dt>Category</dt><dd>{selectedVuln.type}</dd></div>
+                      <div><dt>Endpoint</dt><dd><code className={styles.inlineCode}>{selectedVuln.endpoint}</code></dd></div>
+                    </dl>
+                  </header>
 
-                    {/* DOWNLOADABLE REMEDIATION PACKAGE BAR */}
-                    <div className={styles.downloadPackageBar}>
-                      <div className={styles.downloadBarTitle}>
-                        <strong>Downloadable Remediation Package</strong>
-                        <span>Export verified fixes in your preferred format</span>
-                      </div>
-                      <div className={styles.downloadButtonsGroup}>
-                        <button
-                          className={styles.downloadBtn}
-                          onClick={() => downloadFile(`${selectedVuln.id}-code-fix.patch`, selectedVuln.patch, 'text/plain')}
-                        >
-                          📥 Code Patch (.patch)
-                        </button>
-                        <button
-                          className={styles.downloadBtn}
-                          onClick={() => downloadFile(
-                            `${selectedVuln.id}-remediation-guide.md`,
-                            `# Remediation Guide: ${selectedVuln.title}\n\n## Vulnerability Details\n- Severity: ${selectedVuln.severity.toUpperCase()} (CVSS ${selectedVuln.cvss})\n- Type: ${selectedVuln.type}\n- Endpoint: ${selectedVuln.endpoint}\n\n## Description\n${selectedVuln.description}\n\n## Verified Proof of Concept\n\`\`\`\n${selectedVuln.poc}\n\`\`\`\n\n## Step-by-Step Fix Procedure\n${selectedVuln.fix}\n\n## Surgical Code Patch\n\`\`\`diff\n${selectedVuln.patch}\n\`\`\`\n`,
-                            'text/markdown'
-                          )}
-                        >
-                          📄 Developer Guide (.md)
-                        </button>
-                        <button
-                          className={styles.downloadBtn}
-                          onClick={() => downloadFile(
-                            `redsuture-${selectedVuln.id}.sarif`,
-                            JSON.stringify({
-                              version: '2.1.0',
-                              $schema: 'http://json.schemastore.org/sarif-2.1.0',
-                              runs: [{
-                                tool: { driver: { name: 'RedSuture Autonomous AI', version: '2.0.0' } },
-                                results: [{
-                                  ruleId: selectedVuln.id,
-                                  message: { text: selectedVuln.title },
-                                  properties: { cvss: selectedVuln.cvss, severity: selectedVuln.severity, remediation: selectedVuln.fix }
-                                }]
+                  <div className={styles.downloadBar}>
+                    <div className={styles.downloadBarTitle}>
+                      <strong>Remediation package</strong>
+                      <span>Export this finding in the format your team uses</span>
+                    </div>
+                    <div className={styles.downloadButtons}>
+                      <button className={styles.downloadBtn} onClick={() => downloadFile(`${selectedVuln.id}-code-fix.patch`, selectedVuln.patch, 'text/plain')}>
+                        <DownloadIcon size={14} /> Patch <code>.patch</code>
+                      </button>
+                      <button
+                        className={styles.downloadBtn}
+                        onClick={() => downloadFile(
+                          `${selectedVuln.id}-remediation-guide.md`,
+                          `# Remediation Guide: ${selectedVuln.title}\n\n## Vulnerability Details\n- Severity: ${selectedVuln.severity.toUpperCase()} (CVSS ${selectedVuln.cvss})\n- Type: ${selectedVuln.type}\n- Endpoint: ${selectedVuln.endpoint}\n\n## Description\n${selectedVuln.description}\n\n## Verified Proof of Concept\n\`\`\`\n${selectedVuln.poc}\n\`\`\`\n\n## Step-by-Step Fix Procedure\n${selectedVuln.fix}\n\n## Surgical Code Patch\n\`\`\`diff\n${selectedVuln.patch}\n\`\`\`\n`,
+                          'text/markdown'
+                        )}
+                      >
+                        <DownloadIcon size={14} /> Guide <code>.md</code>
+                      </button>
+                      <button
+                        className={styles.downloadBtn}
+                        onClick={() => downloadFile(
+                          `redsuture-${selectedVuln.id}.sarif`,
+                          JSON.stringify({
+                            version: '2.1.0',
+                            $schema: 'http://json.schemastore.org/sarif-2.1.0',
+                            runs: [{
+                              tool: { driver: { name: 'RedSuture Autonomous AI', version: '2.0.0' } },
+                              results: [{
+                                ruleId: selectedVuln.id,
+                                message: { text: selectedVuln.title },
+                                properties: { cvss: selectedVuln.cvss, severity: selectedVuln.severity, remediation: selectedVuln.fix }
                               }]
-                            }, null, 2),
-                            'application/json'
-                          )}
-                        >
-                          🛡️ SARIF v2.1.0 (.sarif)
-                        </button>
-                        <button
-                          className={styles.downloadBtn}
-                          onClick={() => downloadFile(
-                            `audit-report-${selectedVuln.id}.json`,
-                            JSON.stringify(selectedVuln, null, 2),
-                            'application/json'
-                          )}
-                        >
-                          📊 Audit Report (.json)
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>Verified Proof-of-Concept Exploit</h3>
-                      <div className={styles.pocBox}>
-                        <code>{selectedVuln.poc}</code>
-                      </div>
-                    </div>
-
-                    <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>Technical Impact &amp; Root Cause Analysis</h3>
-                      <p className={styles.vulnDesc}>{selectedVuln.description}</p>
-                    </div>
-
-                    <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>Step-by-Step Implementation Guide</h3>
-                      <div className={styles.stepFixBox}>
-                        {selectedVuln.fix.split('\n').map((step, idx) => (
-                          <div key={idx} className={styles.stepFixItem}>
-                            <span>{step}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className={styles.vulnSection}>
-                      <h3 className={styles.vulnSectionTitle}>SutureEngine Surgical Code Patch</h3>
-                      <div className={styles.patchDiffBox}>
-                        <pre className={styles.patchPre}>{selectedVuln.patch}</pre>
-                      </div>
-                    </div>
-
-                    <div className={styles.vulnActions}>
-                      <button
-                        className="btn-primary"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(selectedVuln.patch);
-                          showToast('Code patch copied to clipboard!');
-                        }}
-                        style={{ fontSize: '0.875rem' }}
+                            }]
+                          }, null, 2),
+                          'application/json'
+                        )}
                       >
-                        Copy Code Patch
+                        <DownloadIcon size={14} /> SARIF <code>.sarif</code>
                       </button>
                       <button
-                        className="btn-secondary"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(`${selectedVuln.title}\n\nDescription:\n${selectedVuln.description}\n\nRemediation Steps:\n${selectedVuln.fix}`);
-                          showToast('Remediation guide copied!');
-                        }}
-                        style={{ fontSize: '0.875rem' }}
+                        className={styles.downloadBtn}
+                        onClick={() => downloadFile(`audit-report-${selectedVuln.id}.json`, JSON.stringify(selectedVuln, null, 2), 'application/json')}
                       >
-                        Copy Implementation Guide
+                        <DownloadIcon size={14} /> Report <code>.json</code>
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className={styles.vulnDetailEmpty}>
-                    <p>Select a vulnerability to view details</p>
-                  </div>
-                )}
+
+                  <section className={styles.vulnSection}>
+                    <h3 className={styles.vulnSectionTitle}>Proof of concept</h3>
+                    <pre className={styles.codeBlock}><code>{selectedVuln.poc}</code></pre>
+                  </section>
+
+                  <section className={styles.vulnSection}>
+                    <h3 className={styles.vulnSectionTitle}>Impact &amp; root cause</h3>
+                    <p className={styles.vulnDesc}>{selectedVuln.description}</p>
+                  </section>
+
+                  <section className={styles.vulnSection}>
+                    <h3 className={styles.vulnSectionTitle}>How to fix</h3>
+                    <ol className={styles.fixSteps}>
+                      {selectedVuln.fix.split('\n').map((step, idx) => (
+                        <li key={idx}>{step.replace(/^\d+\.\s*/, '')}</li>
+                      ))}
+                    </ol>
+                  </section>
+
+                  <section className={styles.vulnSection}>
+                    <h3 className={styles.vulnSectionTitle}>Code patch</h3>
+                    <pre className={`${styles.codeBlock} ${styles.diff}`}>
+                      {selectedVuln.patch.split('\n').map((line, idx) => (
+                        <span key={idx} className={diffLineClass(line)}>{line || ' '}{'\n'}</span>
+                      ))}
+                    </pre>
+                  </section>
+
+                  <footer className={styles.vulnActions}>
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(selectedVuln.patch);
+                        showToast('Code patch copied to clipboard');
+                      }}
+                    >
+                      <CopyIcon size={14} /> Copy patch
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${selectedVuln.title}\n\nDescription:\n${selectedVuln.description}\n\nRemediation Steps:\n${selectedVuln.fix}`);
+                        showToast('Remediation guide copied');
+                      }}
+                    >
+                      Copy guide
+                    </button>
+                  </footer>
+                </article>
               </div>
             </div>
           )}
 
-          {/* HISTORY TAB */}
+          {/* HISTORY */}
           {activeTab === 'history' && (
-            <div className={styles.history}>
-              <div className={styles.historyTable}>
-                <div className={styles.tableHeader}>
-                  <span>Target Asset</span>
-                  <span>Assessment Date</span>
-                  <span>Duration</span>
-                  <span>Critical</span>
-                  <span>High</span>
-                  <span>Score</span>
-                  <span>Action</span>
-                </div>
-                {MOCK_SCANS.map(scan => (
-                  <div key={scan.id} className={styles.tableRow}>
-                    <span className={styles.tableTarget}>{scan.target}</span>
-                    <span className={styles.tableCell}>{scan.date}</span>
-                    <span className={styles.tableCell}>{scan.duration}</span>
-                    <span className={`badge badge-red`}>{scan.critical}</span>
-                    <span className={`badge badge-orange`}>{scan.high}</span>
-                    <span className={styles.tableScore} style={{ color: scoreColor(scan.score) }}>{scan.score}/100</span>
-                    <button
-                      className="btn-ghost"
-                      style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                      onClick={() => { setSelectedScan(scan); setActiveTab('findings'); }}
-                    >
-                      View Package →
-                    </button>
-                  </div>
-                ))}
+            <section className={styles.panel}>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Target</th>
+                      <th>Date</th>
+                      <th>Duration</th>
+                      <th>Findings</th>
+                      <th>Score</th>
+                      <th><span className={styles.srOnly}>Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MOCK_SCANS.map(scan => (
+                      <tr key={scan.id} onClick={() => goToFindings(scan)}>
+                        <td>
+                          <span className={styles.tableTarget}>{scan.target}</span>
+                          <span className={styles.tableSub}>{scan.targetType}</span>
+                        </td>
+                        <td className={styles.tableMuted}>{scan.date}</td>
+                        <td className={styles.tableMuted}>{scan.duration}</td>
+                        <td>
+                          <span className={styles.scanBadges}>
+                            <SeverityPill level="critical" count={scan.critical} />
+                            <SeverityPill level="high" count={scan.high} />
+                          </span>
+                        </td>
+                        <td><span className={`${styles.tableScore} ${scoreClass(scan.score)}`}>{scan.score}</span></td>
+                        <td className={styles.tableAction}>
+                          <button className="btn-ghost" onClick={e => { e.stopPropagation(); goToFindings(scan); }}>
+                            View <ChevronRightIcon size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            </section>
           )}
         </div>
       </main>
