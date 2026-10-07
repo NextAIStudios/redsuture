@@ -7,6 +7,15 @@ import os from 'os';
 const STRIX_BIN = process.env.STRIX_BIN || path.join(os.homedir(), '.strix/bin/strix');
 const RUNS_DIR = path.join(process.cwd(), 'strix_runs');
 
+interface ScanMeta {
+  runId: string;
+  startedAt: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
 export async function POST(request: Request) {
   try {
     const {
@@ -103,9 +112,9 @@ export async function POST(request: Request) {
     }));
 
     return NextResponse.json({ runId, pid: child.pid, status: 'running', targets: finalTargets });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[scan/start]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }
 
@@ -119,7 +128,7 @@ export async function GET() {
       .filter(f => f.endsWith('.meta.json'))
       .map(f => {
         try {
-          const meta = JSON.parse(fs.readFileSync(path.join(RUNS_DIR, f), 'utf8'));
+          const meta: ScanMeta = JSON.parse(fs.readFileSync(path.join(RUNS_DIR, f), 'utf8'));
           const runDir = path.join(RUNS_DIR, meta.runId);
           // Check if scan is done by looking for findings.sarif
           if (fs.existsSync(path.join(runDir, 'findings.sarif'))) {
@@ -128,11 +137,11 @@ export async function GET() {
           return meta;
         } catch { return null; }
       })
-      .filter(Boolean)
-      .sort((a: any, b: any) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+      .filter((meta): meta is ScanMeta => meta !== null)
+      .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
 
     return NextResponse.json({ scans: metas });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
   }
 }

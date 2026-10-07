@@ -8,7 +8,6 @@ export async function POST(request: Request) {
       vulnId,
       vulnTitle,
       patchDiff,
-      githubToken
     } = await request.json();
 
     if (!repoUrl) {
@@ -43,8 +42,9 @@ export async function POST(request: Request) {
     };
 
     return NextResponse.json(prData);
-  } catch (err: any) {
+  } catch (err) {
     console.error('[github/pr]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

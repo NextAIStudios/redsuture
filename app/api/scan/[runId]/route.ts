@@ -4,11 +4,38 @@ import fs from 'fs';
 
 const RUNS_DIR = path.join(process.cwd(), 'strix_runs');
 
-function parseSarif(sarifPath: string) {
+interface SarifResult {
+  ruleId?: string;
+  message?: { text?: string };
+  fingerprints?: Record<string, string>;
+  locations?: { physicalLocation?: { artifactLocation?: { uri?: string } } }[];
+  properties?: {
+    severity?: string;
+    cvss?: number;
+    description?: string;
+    remediation?: string;
+    poc?: string;
+  };
+}
+
+interface Finding {
+  id: string;
+  title: string;
+  severity: string;
+  cvss: number;
+  type: string;
+  endpoint: string;
+  status: string;
+  description: string;
+  remediation: string;
+  poc: string;
+}
+
+function parseSarif(sarifPath: string): Finding[] {
   try {
     const sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf8'));
-    const results = sarif?.runs?.[0]?.results || [];
-    return results.map((r: any) => ({
+    const results: SarifResult[] = sarif?.runs?.[0]?.results || [];
+    return results.map(r => ({
       id: r.fingerprints?.['strix/v1'] || Math.random().toString(36),
       title: r.message?.text || 'Unknown',
       severity: r.properties?.severity || 'info',
@@ -60,7 +87,7 @@ export async function GET(
   const runJson = parseRunJson(runJsonPath);
 
   // Count severities
-  const counts = findings.reduce((acc: any, f: any) => {
+  const counts = findings.reduce<Record<string, number>>((acc, f) => {
     acc[f.severity] = (acc[f.severity] || 0) + 1;
     return acc;
   }, {});
