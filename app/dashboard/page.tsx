@@ -431,7 +431,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <nav className={styles.nav} aria-label="Dashboard navigation">
+        <nav className={styles.sidebarNav} aria-label="Dashboard navigation">
           {NAV_ITEMS.map(item => (
             <button
               key={item.id}
@@ -444,8 +444,8 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        <div className={styles.sidebarFoot}>
-          <button className={`${styles.btnPrimary} ${styles.startScanBtn}`} onClick={() => setActiveTab('new-scan')}>
+        <div className={styles.sidebarFooter}>
+          <button className={`btn-primary ${styles.startScanBtn}`} onClick={() => setActiveTab('new-scan')}>
             <PlusIcon size={16} />
             {!sidebarCollapsed && <span>New scan</span>}
           </button>
@@ -454,12 +454,12 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className={styles.main}>
-        <header className={styles.topHeader}>
+        <header className={styles.topBar}>
           <div>
             <h1 className={styles.pageTitle}>{pageMeta.title}</h1>
-            <p className={styles.pageSubtitle}>{pageMeta.sub}</p>
+            <p className={styles.pageSub}>{pageMeta.sub}</p>
           </div>
-          <div className={styles.headerActions}>
+          <div className={styles.topBarRight}>
             <button className="btn-secondary" onClick={() => downloadFile('redsuture-compliance-audit.json', JSON.stringify({ scans: scansList, findings: findingsList }, null, 2), 'application/json')}>
               <DownloadIcon size={14} /> Export audit bundle
             </button>
@@ -472,7 +472,7 @@ export default function DashboardPage() {
         <div className={styles.content}>
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
-            <div className={styles.overview}>
+            <div className={styles.stack}>
               <div className={styles.statsGrid}>
                 {STATS.map(s => (
                   <div key={s.label} className={styles.statCard}>
@@ -693,7 +693,7 @@ export default function DashboardPage() {
               <div className={styles.formActions}>
                 <button
                   type="button"
-                  className={`${styles.btnPrimary} ${styles.launchBtn}`}
+                  className={`btn-primary ${styles.launchBtn}`}
                   disabled={scanProgress.status === 'running'}
                   onClick={startScan}
                 >
@@ -706,14 +706,14 @@ export default function DashboardPage() {
 
           {/* FINDINGS TAB */}
           {activeTab === 'findings' && (
-            <div className={styles.findings}>
-              <section className={styles.findingsSummary}>
-                <div className={styles.summaryTarget}>
+            <div className={styles.stack}>
+              <section className={styles.findingsHeader}>
+                <div className={styles.findingsMeta}>
                   <div className={styles.summaryLabel}>Active target</div>
-                  <div className={styles.summaryHost}>{selectedScan.target}</div>
-                  <div className={styles.summaryMeta}>{selectedScan.targetType} · Scanned {selectedScan.date}</div>
+                  <div className={styles.findingsTarget}>{selectedScan.target}</div>
+                  <div className={styles.findingsDate}>{selectedScan.targetType} · Scanned {selectedScan.date}</div>
                 </div>
-                <div className={styles.summaryCounts}>
+                <div className={styles.findingsBadges}>
                   <SeverityPill level="critical" count={findingsList.filter(f => f.severity === 'critical').length} />
                   <SeverityPill level="high" count={findingsList.filter(f => f.severity === 'high').length} />
                   <SeverityPill level="medium" count={findingsList.filter(f => f.severity === 'medium').length} />
