@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { runDirectAiScan } from './engine';
 
 const STRIX_BIN = process.env.STRIX_BIN || path.join(os.homedir(), '.strix/bin/strix');
 const RUNS_DIR = path.join(process.cwd(), 'strix_runs');
@@ -11,6 +12,11 @@ interface ScanMeta {
   runId: string;
   startedAt: string;
   status: string;
+  target?: string;
+  targets?: string[];
+  targetType?: string;
+  mode?: string;
+  llm?: string;
   [key: string]: unknown;
 }
 
@@ -58,60 +64,102 @@ export async function POST(request: Request) {
     const runId = `${primaryHost || 'target'}_${Date.now().toString(36)}`;
     const runOutput = path.join(RUNS_DIR, runId);
 
-    const args: string[] = [];
-
-    if (targetType === 'list') {
-      // Targets list file
-      args.push('--target-list', finalTargets[0]);
-    } else {
-      // Support single or multiple -t / --target inputs (for whitebox or multiple target types)
-      finalTargets.forEach(t => {
-        args.push('--target', t);
-      });
-    }
-
-    args.push(
-      '--scan-mode', mode,
-      '--output', runOutput,
-      '-n', // non-interactive mode
-    );
-
-    if (instructions) {
-      args.push('--instructions', instructions);
-    }
-
-    const env = {
-      ...process.env,
-      STRIX_LLM: llm,
-      LLM_API_KEY: process.env.LLM_API_KEY || '',
-      PATH: `${path.join(os.homedir(), '.strix/bin')}:${process.env.PATH}`,
-    };
-
-    // Spawn strix in background
-    const child = spawn(STRIX_BIN, args, {
-      env,
-      cwd: process.cwd(),
-      detached: true,
-      stdio: 'ignore',
-    });
-
-    child.unref();
-
-    // Save metadata
+    // Initial metadata
     const metaPath = path.join(RUNS_DIR, `${runId}.meta.json`);
-    fs.writeFileSync(metaPath, JSON.stringify({
+    const initialMeta = {
       runId,
       target: finalTargets.join(', '),
       targets: finalTargets,
       targetType,
       mode,
       llm,
-      pid: child.pid,
       startedAt: new Date().toISOString(),
       status: 'running',
-    }));
+    };
+    fs.writeFileSync(metaPath, JSON.stringify(initialMeta, null, 2));
 
-    return NextResponse.json({ runId, pid: child.pid, status: 'running', targets: finalTargets });
+    const isStrixAvailable = Boolean(process.env.STRIX_BIN && fs.existsSync(/*turbopackIgnore: true*/ STRIX_BIN));
+
+    if (isStrixAvailable) {
+      try {
+        const args: string[] = [];
+        if (targetType === 'list') {
+          args.push('--target-list', finalTargets[0]);
+        } else {
+          finalTargets.forEach(t => {
+            args.push('--target', t);
+          });
+        }
+
+        args.push(
+          '--scan-mode', mode,
+          '--output', runOutput,
+          '-n', // non-interactive mode
+        );
+
+        if (instructions) {
+          args.push('--instructions', instructions);
+        }
+
+        const env = {
+          ...process.env,
+          STRIX_LLM: llm,
+          LLM_API_KEY: process.env.LLM_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || '',
+          PATH: `${path.join(os.homedir(), '.strix/bin')}:${process.env.PATH}`,
+        };
+
+        const child = spawn(/*turbopackIgnore: true*/ STRIX_BIN, args, {
+          env,
+          cwd: process.cwd(),
+          detached: true,
+          stdio: 'ignore',
+        });
+
+        child.on('error', (spawnErr) => {
+          console.warn('[scan/strix-fallback] Strix spawn error, falling back to direct AI engine:', spawnErr.message);
+          runDirectAiScan({
+            runId,
+            targets: finalTargets,
+            targetType,
+            mode,
+            llm,
+            instructions,
+            runDir: runOutput,
+          }).catch(e => console.error('[scan/direct-engine-error]', e));
+        });
+
+        child.unref();
+
+        return NextResponse.json({ runId, pid: child.pid, status: 'running', targets: finalTargets });
+      } catch (strixErr) {
+        console.warn('[scan/strix-init-error] Falling back to direct AI engine:', strixErr);
+        // Fallback to direct AI engine
+        runDirectAiScan({
+          runId,
+          targets: finalTargets,
+          targetType,
+          mode,
+          llm,
+          instructions,
+          runDir: runOutput,
+        }).catch(e => console.error('[scan/direct-engine-error]', e));
+
+        return NextResponse.json({ runId, status: 'running', targets: finalTargets });
+      }
+    } else {
+      // Primary cloud direct AI reasoning engine
+      runDirectAiScan({
+        runId,
+        targets: finalTargets,
+        targetType,
+        mode,
+        llm,
+        instructions,
+        runDir: runOutput,
+      }).catch(e => console.error('[scan/direct-engine-error]', e));
+
+      return NextResponse.json({ runId, status: 'running', targets: finalTargets });
+    }
   } catch (err) {
     console.error('[scan/start]', err);
     return NextResponse.json({ error: errorMessage(err) }, { status: 500 });

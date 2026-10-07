@@ -24,7 +24,7 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1200));
     router.push('/dashboard');
   };
 
@@ -123,7 +123,7 @@ export default function AuthPage() {
                   type="email"
                   autoComplete="email"
                   className={styles.input}
-                  placeholder="you@company.com"
+                  placeholder="alex@company.com"
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   required
@@ -131,17 +131,13 @@ export default function AuthPage() {
               </div>
 
               <div className={styles.field}>
-                <div className={styles.labelRow}>
-                  <label htmlFor="password" className={styles.label}>Password</label>
-                  {!isSignup && <a href="#" className={styles.forgotLink}>Forgot password?</a>}
-                </div>
+                <label htmlFor="password" className={styles.label}>Password</label>
                 <input
                   id="password"
                   type="password"
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
-                  minLength={isSignup ? 8 : undefined}
                   className={styles.input}
-                  placeholder={isSignup ? 'At least 8 characters' : '••••••••'}
+                  placeholder="••••••••••••"
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   required
@@ -207,7 +203,7 @@ export default function AuthPage() {
           <ul className={styles.brandPoints}>
             <li><CheckIcon /> Proof of concept for every finding</li>
             <li><CheckIcon /> Non-destructive by default</li>
-            <li><CheckIcon /> Fixes as patches or GitHub pull requests</li>
+            <li><CheckIcon /> Downloadable code patches and guides</li>
           </ul>
         </div>
       </aside>

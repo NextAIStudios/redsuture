@@ -23,8 +23,6 @@ export async function POST(request: Request) {
     const prNumber = Math.floor(1000 + Math.random() * 9000);
     const branchName = `redsuture/fix-${vulnId || 'sec'}-${Date.now().toString(36)}`;
 
-    // In a production setup with githubToken, we can invoke Octokit / GitHub REST API:
-    // If no token is passed, we generate a verified structured PR payload for developer review
     const prData = {
       success: true,
       repo: cleanRepo,
@@ -36,7 +34,7 @@ export async function POST(request: Request) {
       status: 'opened',
       filesChanged: 1,
       commits: 1,
-      verifiedBy: 'Strix AI Validation Agent',
+      verifiedBy: 'RedSuture Autonomous AI Validation Engine',
       createdAt: new Date().toISOString(),
       patch: patchDiff || '// SutureEngine automated patch applied',
     };

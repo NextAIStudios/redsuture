@@ -671,16 +671,35 @@
 
 .targetGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1180px) {
+  .targetGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .targetGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .targetGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .targetCard {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 16px 14px;
+  min-height: 140px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.015);
@@ -688,7 +707,7 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
 .targetCard:hover {
@@ -708,7 +727,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .targetCardIcon {
@@ -734,7 +753,7 @@
 
 .targetCardDesc {
   font-size: 0.75rem;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--text-muted);
 }
 

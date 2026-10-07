@@ -595,6 +595,103 @@
   white-space: nowrap;
 }
 
+/* ─── Active Threat Mitigation Coverage Ticker ─────────────── */
+
+.tickerSection {
+  padding: 28px 0 24px;
+  border-bottom: 1px solid var(--l-border);
+  background: #09090b;
+  overflow: hidden;
+}
+
+.tickerHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tickerTag {
+  font-family: var(--l-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #fca5a5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  white-space: nowrap;
+}
+
+.tickerSub {
+  font-size: 0.8125rem;
+  color: var(--l-text-3);
+}
+
+.tickerWrap {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+}
+
+.tickerTrack {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  animation: tickerAnim 35s linear infinite;
+}
+
+.tickerTrack:hover {
+  animation-play-state: paused;
+}
+
+@keyframes tickerAnim {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.tickerItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--l-border);
+  background: rgba(255, 255, 255, 0.025);
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--l-text-2);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tickerItem:hover {
+  border-color: rgba(229, 56, 59, 0.4);
+  background: rgba(229, 56, 59, 0.05);
+  color: var(--l-text);
+}
+
+.tickerDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--l-red);
+  box-shadow: 0 0 6px rgba(229, 56, 59, 0.6);
+  flex-shrink: 0;
+}
+
+.tickerText {
+  letter-spacing: -0.01em;
+}
+
 /* ─── Sections ─────────────────────────────────────────────── */
 
 .section {
