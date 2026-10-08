@@ -77,6 +77,74 @@ function parseSarif(sarifPath: string): Finding[] {
   }
 }
 
+interface AgentNode {
+  id: string;
+  name: string;
+  status: string;
+  parentId: string | null;
+  task: string | null;
+  skills: string[];
+  depth: number;
+}
+
+// Parse Strix's live agent graph from <strixRunDir>/.state/agents.json into a
+// pre-ordered tree (children follow their parent; depth drives indentation).
+// Mirrors Strix's own viewer parser so the shapes never drift.
+function parseAgents(agentsPath: string): AgentNode[] {
+  let data: unknown;
+  try {
+    data = JSON.parse(fs.readFileSync(agentsPath, 'utf8'));
+  } catch {
+    return [];
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return [];
+  const rec = data as Record<string, Record<string, unknown>>;
+  const statuses = rec.statuses ?? {};
+  const parentOf = rec.parent_of ?? {};
+  const names = rec.names ?? {};
+  const metadata = rec.metadata ?? {};
+
+  const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+
+  const agents = new Map<string, AgentNode>();
+  for (const id of Object.keys(statuses)) {
+    const meta = (metadata[id] ?? {}) as Record<string, unknown>;
+    const skillsRaw = meta.skills;
+    agents.set(id, {
+      id,
+      name: str(names[id]) ?? id,
+      status: str(statuses[id]) ?? 'unknown',
+      parentId: str(parentOf[id]),
+      task: str(meta.task),
+      skills: Array.isArray(skillsRaw) ? skillsRaw.filter((s): s is string => typeof s === 'string') : [],
+      depth: 0,
+    });
+  }
+  if (agents.size === 0) return [];
+
+  const childrenOf = new Map<string | null, string[]>();
+  for (const a of agents.values()) {
+    const key = a.parentId && agents.has(a.parentId) ? a.parentId : null;
+    const list = childrenOf.get(key) ?? [];
+    list.push(a.id);
+    childrenOf.set(key, list);
+  }
+
+  const ordered: AgentNode[] = [];
+  const seen = new Set<string>();
+  const visit = (id: string, depth: number) => {
+    const a = agents.get(id);
+    if (!a || seen.has(id)) return;
+    seen.add(id);
+    a.depth = depth;
+    ordered.push(a);
+    for (const childId of childrenOf.get(id) ?? []) visit(childId, depth + 1);
+  };
+  for (const rootId of childrenOf.get(null) ?? []) visit(rootId, 0);
+  for (const a of agents.values()) if (!seen.has(a.id)) ordered.push(a);
+  return ordered;
+}
+
 function parseRunJson(runJsonPath: string) {
   try {
     return JSON.parse(fs.readFileSync(runJsonPath, 'utf8'));
@@ -115,6 +183,7 @@ export async function GET(
 
   const isComplete = fs.existsSync(sarifPath) || meta.status === 'complete';
   const findings = isComplete ? parseSarif(sarifPath) : [];
+  const agents = parseAgents(path.join(strixDir, '.state', 'agents.json'));
   const logs = tailLog(logPath);
   const runJson = parseRunJson(runJsonPath);
 
@@ -154,6 +223,8 @@ export async function GET(
     status: isComplete ? 'complete' : meta.status || 'running',
     progress,
     findings,
+    agents,
+    activeAgents: agents.filter(a => a.status === 'running' || a.status === 'waiting').length,
     counts,
     logs: logs.slice(-30),
     tokenInfo,

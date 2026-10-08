@@ -200,6 +200,16 @@ function diffLineClass(line: string) {
 
 type ScanStatus = 'idle' | 'running' | 'complete' | 'error';
 
+interface AgentActivity {
+  id: string;
+  name: string;
+  status: string;
+  parentId: string | null;
+  task: string | null;
+  skills: string[];
+  depth: number;
+}
+
 interface ScanProgress {
   status: ScanStatus;
   phase: string;
@@ -207,7 +217,18 @@ interface ScanProgress {
   messages: string[];
   findings: number;
   tokens: number;
+  agents: AgentActivity[];
 }
+
+const AGENT_STATUS_LABEL: Record<string, string> = {
+  running: 'Working',
+  waiting: 'Waiting',
+  budget_paused: 'Paused',
+  completed: 'Done',
+  stopped: 'Stopped',
+  crashed: 'Crashed',
+  failed: 'Failed',
+};
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -227,7 +248,7 @@ export default function DashboardPage() {
   const [instructions, setInstructions] = useState('');
 
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
-    status: 'idle', phase: '', progress: 0, messages: [], findings: 0, tokens: 0,
+    status: 'idle', phase: '', progress: 0, messages: [], findings: 0, tokens: 0, agents: [],
   });
   const [scansList, setScansList] = useState(MOCK_SCANS);
   const [findingsList, setFindingsList] = useState<VulnFinding[]>(MOCK_VULNS);
@@ -271,6 +292,7 @@ export default function DashboardPage() {
         messages: data.logs || prev.messages,
         findings: data.findings?.length || 0,
         tokens: data.tokenInfo?.total_tokens || prev.tokens,
+        agents: Array.isArray(data.agents) ? data.agents : prev.agents,
       }));
 
       if (data.findings && data.findings.length > 0) {
@@ -361,16 +383,16 @@ export default function DashboardPage() {
 
     setScanProgress({
       status: 'running',
-      phase: 'Initializing autonomous AI agents...',
-      progress: 5,
+      phase: 'Launching Strix agents…',
+      progress: 3,
       messages: [
-        `[CONFIG] Target Architecture: ${targetType.toUpperCase()}`,
-        `[CONFIG] Target Scope: ${targets.join(', ')}`,
-        `[CONFIG] Frontier Reasoning Models: Anthropic Claude & OpenAI`,
-        `[AGENT:RECON] Initiating endpoint discovery & surface mapping...`,
+        `[orchestrator] Target: ${targets.join(', ')}`,
+        `[orchestrator] Scan mode: ${scanMode} · Model: ${aiModel}`,
+        `[orchestrator] Starting Strix — waiting for agents to come online…`,
       ],
       findings: 0,
       tokens: 0,
+      agents: [],
     });
     setActiveTab('overview');
 
@@ -510,6 +532,46 @@ export default function DashboardPage() {
                   <div className={styles.progressBar}>
                     <div className={styles.progressFill} style={{ width: `${scanProgress.progress}%` }} />
                   </div>
+
+                  {scanProgress.agents.length > 0 && (
+                    <div className={styles.agentsPanel}>
+                      <div className={styles.agentsHead}>
+                        <span>Agent team</span>
+                        <span className={styles.agentsActive}>
+                          {scanProgress.agents.filter(a => a.status === 'running' || a.status === 'waiting').length} active
+                          {' · '}{scanProgress.agents.length} total
+                        </span>
+                      </div>
+                      <ul className={styles.agentList}>
+                        {scanProgress.agents.map(a => (
+                          <li
+                            key={a.id}
+                            className={styles.agentRow}
+                            style={{ paddingLeft: `${12 + a.depth * 18}px` }}
+                          >
+                            <span className={`${styles.agentDot} ${styles[`agent_${a.status}`] || ''}`} />
+                            <div className={styles.agentBody}>
+                              <div className={styles.agentTop}>
+                                <span className={styles.agentName}>{a.name}</span>
+                                <span className={`${styles.agentStatus} ${styles[`agent_${a.status}`] || ''}`}>
+                                  {AGENT_STATUS_LABEL[a.status] || a.status}
+                                </span>
+                              </div>
+                              {a.task && <div className={styles.agentTask}>{a.task}</div>}
+                              {a.skills.length > 0 && (
+                                <div className={styles.agentSkills}>
+                                  {a.skills.slice(0, 5).map(sk => (
+                                    <span key={sk} className={styles.agentSkill}>{sk}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className={styles.scanLog} ref={logRef}>
                     {scanProgress.messages.map((msg, i) => (
                       <div key={i} className={styles.logLine}>

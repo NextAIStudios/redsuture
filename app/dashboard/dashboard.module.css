@@ -1555,3 +1555,123 @@
     width: 100%;
   }
 }
+
+/* ─── Live agent team panel ────────────────────────────────── */
+
+.agentsPanel {
+  margin: 14px 20px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0a0a0c;
+  overflow: hidden;
+}
+
+.agentsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.agentsActive {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.agentList {
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.agentRow {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.agentRow + .agentRow {
+  border-top: 1px solid var(--border);
+}
+
+.agentDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--text-muted);
+}
+
+.agentDot.agent_running {
+  animation: pulse-red 1.2s infinite;
+}
+
+.agentBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.agentTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agentName {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agentStatus {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.agentTask {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.agentSkills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.agentSkill {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-muted);
+}
+
+/* Agent status colors (applied to the dot and the status label) */
+.agent_running { color: #f87171; }
+.agent_waiting { color: #fbbf24; }
+.agent_completed { color: var(--green); }
+.agent_failed,
+.agent_crashed { color: #f87171; }
+.agent_stopped,
+.agent_budget_paused { color: var(--text-muted); }
