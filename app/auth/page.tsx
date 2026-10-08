@@ -25,6 +25,13 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     await new Promise(r => setTimeout(r, 1200));
+    // Mark the client as signed in so the landing-page scan CTAs route
+    // straight to the dashboard. This is a UI flag, not a real session.
+    try {
+      localStorage.setItem('rs_authed', '1');
+    } catch {
+      /* storage unavailable */
+    }
     router.push('/dashboard');
   };
 

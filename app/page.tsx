@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import Logo from './components/Logo';
@@ -7,6 +8,25 @@ import {
   ShieldIcon, CodeIcon, GitIcon, GaugeIcon, FileCheckIcon, GlobeIcon, LayersIcon,
   FolderIcon, ApiIcon, ListIcon, CheckIcon, ArrowRightIcon, PlusIcon, DownloadIcon,
 } from './components/icons';
+
+const AUTH_FLAG = 'rs_authed';
+
+// Routes to the dashboard when the user is signed in, otherwise to sign-up.
+// Auth is a client-side flag here (set by the auth page); there is no server
+// session, so this gates the UI rather than enforcing access.
+function useLaunchScan() {
+  const router = useRouter();
+  return (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    let authed = false;
+    try {
+      authed = localStorage.getItem(AUTH_FLAG) === '1';
+    } catch {
+      authed = false;
+    }
+    router.push(authed ? '/dashboard' : '/auth?mode=signup');
+  };
+}
 
 const NAV_LINKS = [
   { href: '#how-it-works', label: 'How it works' },
@@ -30,6 +50,7 @@ function NavBar() {
   }, []);
 
   const close = () => setMenuOpen(false);
+  const launchScan = useLaunchScan();
 
   return (
     <header className={`${styles.nav} ${scrolled || menuOpen ? styles.navScrolled : ''} ${menuOpen ? styles.navOpen : ''}`}>
@@ -42,9 +63,9 @@ function NavBar() {
         </nav>
         <div className={styles.navActions}>
           <Link href="/auth" className={styles.navSignIn}>Sign in</Link>
-          <Link href="/dashboard" className={`${styles.btn} ${styles.btnPrimary}`}>
+          <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={launchScan}>
             Launch scan
-          </Link>
+          </button>
         </div>
         <button
           className={`${styles.menuBtn} ${menuOpen ? styles.menuBtnActive : ''}`}
@@ -63,7 +84,7 @@ function NavBar() {
           </nav>
           <div className={styles.mobileNavActions}>
             <Link href="/auth" className={`${styles.btn} ${styles.btnSecondary}`} onClick={close}>Sign in</Link>
-            <Link href="/dashboard" className={`${styles.btn} ${styles.btnPrimary}`} onClick={close}>Launch scan</Link>
+            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={e => { close(); launchScan(e); }}>Launch scan</button>
           </div>
         </div>
       </div>
@@ -92,6 +113,7 @@ const SAMPLE_FINDINGS: { level: Severity; title: string; where: string }[] = [
 ];
 
 function HeroReport() {
+  const launchScan = useLaunchScan();
   return (
     <div className={styles.window} aria-label="Example RedSuture scan report">
       <div className={styles.windowBar}>
@@ -138,9 +160,9 @@ function HeroReport() {
         <span className={styles.reportFiles}>
           <code>.patch</code><code>.md</code><code>.pdf</code><code>.sarif</code>
         </span>
-        <Link href="/dashboard" className={styles.reportAction}>
+        <button type="button" className={styles.reportAction} onClick={launchScan}>
           <DownloadIcon size={14} /> Download fixes
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -326,6 +348,7 @@ function Faq() {
 }
 
 export default function LandingPage() {
+  const launchScan = useLaunchScan();
   return (
     <div className={styles.page}>
       <NavBar />
@@ -349,9 +372,9 @@ export default function LandingPage() {
                 RedSuture deploys autonomous AI reasoning agents that probe your web applications, APIs, and repositories for deep logic flaws — proving each vulnerability in an isolated sandbox and delivering downloadable, ready-to-apply surgical code patches.
               </p>
               <div className={styles.heroActions}>
-                <Link href="/dashboard" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}>
+                <button type="button" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`} onClick={launchScan}>
                   Launch a scan <ArrowRightIcon />
-                </Link>
+                </button>
                 <a href="#deliverables" className={`${styles.btn} ${styles.btnSecondary} ${styles.btnLg}`}>
                   View sample fixes
                 </a>
@@ -636,9 +659,9 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               <h2 className={styles.ctaTitle}>Discover what an attacker would exploit — before they do.</h2>
               <p className={styles.ctaSub}>Launch your first autonomous scan in seconds. Get verified proof of concepts and downloadable code patches immediately.</p>
               <div className={styles.ctaActions}>
-                <Link href="/dashboard" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}>
+                <button type="button" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`} onClick={launchScan}>
                   Start a scan <ArrowRightIcon />
-                </Link>
+                </button>
                 <Link href="/auth" className={`${styles.btn} ${styles.btnSecondary} ${styles.btnLg}`}>
                   Sign in to workspace
                 </Link>
@@ -669,7 +692,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                 <a href="#coverage">Target architectures</a>
                 <a href="#deliverables">Remediation guides</a>
                 <a href="#faq">FAQ</a>
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard" onClick={launchScan}>Dashboard</Link>
               </div>
               <div className={styles.footerCol}>
                 <h4>Legal &amp; Trust</h4>
