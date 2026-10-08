@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
-import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
-import { runDirectAiScan } from './engine';
+import { runStrixScan } from './engine';
 
-const STRIX_BIN = process.env.STRIX_BIN || path.join(os.homedir(), '.strix/bin/strix');
 const RUNS_DIR = path.join(process.cwd(), 'strix_runs');
 
 interface ScanMeta {
@@ -30,7 +27,7 @@ export async function POST(request: Request) {
       targetType = 'url',
       mode = 'quick',
       llm = 'anthropic/claude-sonnet-4-6',
-      instructions
+      instructions,
     } = await request.json();
 
     const finalTargets: string[] = [];
@@ -41,15 +38,17 @@ export async function POST(request: Request) {
     }
 
     if (finalTargets.length === 0) {
-      return NextResponse.json({ error: 'At least one target (URL, Repo, Directory, or Target list) is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'At least one target (URL, repo, directory, or target list) is required' },
+        { status: 400 },
+      );
     }
 
-    // Ensure runs directory exists
     if (!fs.existsSync(RUNS_DIR)) {
       fs.mkdirSync(RUNS_DIR, { recursive: true });
     }
 
-    // Generate a safe unique run name based on first target
+    // Build a safe, unique run id from the first target.
     let primaryHost = 'scan';
     try {
       if (finalTargets[0].startsWith('http://') || finalTargets[0].startsWith('https://')) {
@@ -63,10 +62,10 @@ export async function POST(request: Request) {
 
     const runId = `${primaryHost || 'target'}_${Date.now().toString(36)}`;
     const runOutput = path.join(RUNS_DIR, runId);
+    fs.mkdirSync(runOutput, { recursive: true });
 
-    // Initial metadata
     const metaPath = path.join(RUNS_DIR, `${runId}.meta.json`);
-    const initialMeta = {
+    const initialMeta: ScanMeta = {
       runId,
       target: finalTargets.join(', '),
       targets: finalTargets,
@@ -78,88 +77,19 @@ export async function POST(request: Request) {
     };
     fs.writeFileSync(metaPath, JSON.stringify(initialMeta, null, 2));
 
-    const isStrixAvailable = Boolean(process.env.STRIX_BIN && fs.existsSync(/*turbopackIgnore: true*/ STRIX_BIN));
+    // Launch the real Strix pentest in the background. The engine handles model
+    // fallback and honest error reporting; progress is read via GET /api/scan/<runId>.
+    runStrixScan({
+      runId,
+      targets: finalTargets,
+      targetType,
+      mode,
+      llm,
+      instructions,
+      runDir: runOutput,
+    }).catch(e => console.error('[scan/engine-error]', e));
 
-    if (isStrixAvailable) {
-      try {
-        const args: string[] = [];
-        if (targetType === 'list') {
-          args.push('--target-list', finalTargets[0]);
-        } else {
-          finalTargets.forEach(t => {
-            args.push('--target', t);
-          });
-        }
-
-        args.push(
-          '--scan-mode', mode,
-          '--output', runOutput,
-          '-n', // non-interactive mode
-        );
-
-        if (instructions) {
-          args.push('--instructions', instructions);
-        }
-
-        const env = {
-          ...process.env,
-          STRIX_LLM: llm,
-          LLM_API_KEY: process.env.LLM_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || '',
-          PATH: `${path.join(os.homedir(), '.strix/bin')}:${process.env.PATH}`,
-        };
-
-        const child = spawn(/*turbopackIgnore: true*/ STRIX_BIN, args, {
-          env,
-          cwd: process.cwd(),
-          detached: true,
-          stdio: 'ignore',
-        });
-
-        child.on('error', (spawnErr) => {
-          console.warn('[scan/strix-fallback] Strix spawn error, falling back to direct AI engine:', spawnErr.message);
-          runDirectAiScan({
-            runId,
-            targets: finalTargets,
-            targetType,
-            mode,
-            llm,
-            instructions,
-            runDir: runOutput,
-          }).catch(e => console.error('[scan/direct-engine-error]', e));
-        });
-
-        child.unref();
-
-        return NextResponse.json({ runId, pid: child.pid, status: 'running', targets: finalTargets });
-      } catch (strixErr) {
-        console.warn('[scan/strix-init-error] Falling back to direct AI engine:', strixErr);
-        // Fallback to direct AI engine
-        runDirectAiScan({
-          runId,
-          targets: finalTargets,
-          targetType,
-          mode,
-          llm,
-          instructions,
-          runDir: runOutput,
-        }).catch(e => console.error('[scan/direct-engine-error]', e));
-
-        return NextResponse.json({ runId, status: 'running', targets: finalTargets });
-      }
-    } else {
-      // Primary cloud direct AI reasoning engine
-      runDirectAiScan({
-        runId,
-        targets: finalTargets,
-        targetType,
-        mode,
-        llm,
-        instructions,
-        runDir: runOutput,
-      }).catch(e => console.error('[scan/direct-engine-error]', e));
-
-      return NextResponse.json({ runId, status: 'running', targets: finalTargets });
-    }
+    return NextResponse.json({ runId, status: 'running', targets: finalTargets });
   } catch (err) {
     console.error('[scan/start]', err);
     return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
@@ -167,7 +97,6 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  // List all scans
   try {
     if (!fs.existsSync(RUNS_DIR)) return NextResponse.json({ scans: [] });
 
@@ -176,14 +105,10 @@ export async function GET() {
       .filter(f => f.endsWith('.meta.json'))
       .map(f => {
         try {
-          const meta: ScanMeta = JSON.parse(fs.readFileSync(path.join(RUNS_DIR, f), 'utf8'));
-          const runDir = path.join(RUNS_DIR, meta.runId);
-          // Check if scan is done by looking for findings.sarif
-          if (fs.existsSync(path.join(runDir, 'findings.sarif'))) {
-            meta.status = 'complete';
-          }
-          return meta;
-        } catch { return null; }
+          return JSON.parse(fs.readFileSync(path.join(RUNS_DIR, f), 'utf8')) as ScanMeta;
+        } catch {
+          return null;
+        }
       })
       .filter((meta): meta is ScanMeta => meta !== null)
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());

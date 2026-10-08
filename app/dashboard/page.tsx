@@ -292,6 +292,16 @@ export default function DashboardPage() {
         setSelectedVuln(mappedFindings[0]);
       }
 
+      if (data.status === 'error') {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setScanProgress(prev => ({
+          ...prev,
+          status: 'error',
+          phase: data.error || 'Scan failed — check the scan log.',
+        }));
+        return;
+      }
+
       if (data.status === 'complete') {
         if (pollRef.current) clearInterval(pollRef.current);
         // Add to recent scans if not present
