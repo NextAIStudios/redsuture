@@ -1,13 +1,14 @@
 'use client';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './dashboard.module.css';
 import Logo from '../components/Logo';
 import {
   GridIcon, RadarIcon, AlertIcon, ClockIcon, PlusIcon, CheckIcon, ArrowRightIcon,
   ChevronRightIcon, DownloadIcon, CopyIcon, GlobeIcon, GitIcon, FolderIcon, LayersIcon, ListIcon,
-  FileCheckIcon, type IconProps,
+  FileCheckIcon, SettingsIcon, type IconProps,
 } from '../components/icons';
+import { loadProfile, initials, type Profile } from '../lib/profile';
 
 interface VulnFinding {
   id: string;
@@ -268,6 +269,13 @@ export default function DashboardPage() {
 
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  useEffect(() => {
+    // Hydration-safe read of the client-only profile after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProfile(loadProfile());
+  }, []);
 
   // Agent drill-down: the agent whose steps are shown, and that agent's steps.
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -620,6 +628,16 @@ export default function DashboardPage() {
             <PlusIcon size={16} />
             {!sidebarCollapsed && <span>New scan</span>}
           </button>
+          <Link href="/dashboard/settings" className={styles.userCard} title="Account settings">
+            <span className={styles.userAvatar}>{initials(profile?.name || 'RedSuture')}</span>
+            {!sidebarCollapsed && (
+              <span className={styles.userInfo}>
+                <span className={styles.userName}>{profile?.name || 'Your account'}</span>
+                <span className={styles.userOrg}>{profile?.company || 'Set up workspace'}</span>
+              </span>
+            )}
+            {!sidebarCollapsed && <SettingsIcon size={16} className={styles.userGear} />}
+          </Link>
         </div>
       </aside>
 

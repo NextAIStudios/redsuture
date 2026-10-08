@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './auth.module.css';
 import Logo from '../components/Logo';
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../components/icons';
+import { saveSignupDraft, setAuthed } from '../lib/profile';
 
 type Mode = 'signin' | 'signup';
 
@@ -25,14 +26,14 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     await new Promise(r => setTimeout(r, 1200));
-    // Mark the client as signed in so the landing-page scan CTAs route
-    // straight to the dashboard. This is a UI flag, not a real session.
-    try {
-      localStorage.setItem('rs_authed', '1');
-    } catch {
-      /* storage unavailable */
+    setAuthed(true);
+    if (mode === 'signup') {
+      // New users complete onboarding (company + website) before the dashboard.
+      saveSignupDraft({ name: form.name, email: form.email, company: form.company });
+      router.push('/onboarding');
+    } else {
+      router.push('/dashboard');
     }
-    router.push('/dashboard');
   };
 
   const isSignup = mode === 'signup';
