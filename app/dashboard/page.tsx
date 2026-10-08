@@ -6,7 +6,7 @@ import Logo from '../components/Logo';
 import {
   GridIcon, RadarIcon, AlertIcon, ClockIcon, PlusIcon, CheckIcon, ArrowRightIcon,
   ChevronRightIcon, DownloadIcon, CopyIcon, GlobeIcon, GitIcon, FolderIcon, LayersIcon, ListIcon,
-  FileCheckIcon, SettingsIcon, type IconProps,
+  FileCheckIcon, SettingsIcon, CalendarIcon, LockIcon, type IconProps,
 } from '../components/icons';
 import { loadProfile, initials, type Profile } from '../lib/profile';
 
@@ -181,6 +181,27 @@ const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: strin
   { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Multi-step exploit chains and correlated white-box taint analysis' },
 ];
 
+type ScheduleId = 'manual' | 'weekly' | 'monthly' | 'daily' | 'continuous';
+
+// Automated-scan cadences, gated by plan tier (0 = any, 1 = any paid plan,
+// 2 = Pro/Scale, 3 = Enterprise). The user's plan sets which are available.
+const SCHEDULES: { id: ScheduleId; label: string; desc: string; minTier: number; tier?: string }[] = [
+  { id: 'manual', label: 'Run once', desc: 'A single scan, started now.', minTier: 0 },
+  { id: 'weekly', label: 'Weekly', desc: 'Re-scan this target every week.', minTier: 1 },
+  { id: 'monthly', label: 'Monthly', desc: 'Re-scan this target every month.', minTier: 1 },
+  { id: 'daily', label: 'Daily', desc: 'Re-scan every day for fast-moving apps.', minTier: 2, tier: 'Pro' },
+  { id: 'continuous', label: 'On every pull request', desc: 'Scan each PR before it merges.', minTier: 3, tier: 'Enterprise' },
+];
+
+// Map a plan name to a tier rank. Defaults to Pro-level for signed-up users.
+function planTier(plan?: string): number {
+  const p = (plan || '').toLowerCase();
+  if (p.includes('enterprise')) return 3;
+  if (p.includes('pro') || p.includes('scale') || p.includes('business')) return 2;
+  if (p.includes('team') || p.includes('starter')) return 1;
+  return 2;
+}
+
 const SEVERITY_LABEL: Record<Severity, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
 
 function SeverityPill({ level, count }: { level: Severity; count?: number }) {
@@ -254,6 +275,7 @@ export default function DashboardPage() {
   // Model & scan options
   const [aiModel, setAiModel] = useState('anthropic/claude-sonnet-4-6');
   const [scanMode, setScanMode] = useState<ScanMode>('quick');
+  const [schedule, setSchedule] = useState<ScheduleId>('manual');
   const [instructions, setInstructions] = useState('');
 
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
@@ -451,6 +473,7 @@ export default function DashboardPage() {
           mode: scanMode,
           llm: aiModel,
           instructions: instructions || undefined,
+          schedule,
         }),
       });
       const data = await res.json();
@@ -458,6 +481,11 @@ export default function DashboardPage() {
       if (data.error) {
         setScanProgress(prev => ({ ...prev, status: 'error', phase: `Error: ${data.error}` }));
         return;
+      }
+
+      if (schedule !== 'manual') {
+        const label = SCHEDULES.find(s => s.id === schedule)?.label.toLowerCase();
+        showToast(`${label?.[0].toUpperCase()}${label?.slice(1)} scans scheduled for ${targets[0]}`);
       }
 
       setActiveRunId(data.runId);
@@ -741,6 +769,48 @@ export default function DashboardPage() {
                 <div className={styles.formSectionHead}>
                   <span className={styles.stepBadge}>2</span>
                   <div>
+                    <h2 className={styles.formSectionTitle}>Schedule</h2>
+                    <p className={styles.formSectionDesc}>
+                      Run once now, or automate recurring scans. Options depend on your {profile?.plan || 'Pro'} plan.
+                    </p>
+                  </div>
+                </div>
+                <div className={styles.scheduleGrid}>
+                  {SCHEDULES.map(s => {
+                    const locked = planTier(profile?.plan) < s.minTier;
+                    const active = schedule === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        disabled={locked}
+                        aria-pressed={active}
+                        className={`${styles.scheduleOption} ${active ? styles.scheduleOptionActive : ''} ${locked ? styles.scheduleOptionLocked : ''}`}
+                        onClick={() => !locked && setSchedule(s.id)}
+                      >
+                        <span className={styles.scheduleTop}>
+                          <span className={styles.scheduleLabel}>
+                            {s.id === 'manual' ? <RadarIcon size={15} /> : <CalendarIcon size={15} />} {s.label}
+                          </span>
+                          {locked && <span className={styles.scheduleLock}><LockIcon size={12} /> {s.tier}</span>}
+                        </span>
+                        <span className={styles.scheduleDesc}>{s.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {schedule !== 'manual' && (
+                  <p className={styles.scheduleNote}>
+                    The first scan starts now; {SCHEDULES.find(s => s.id === schedule)?.label.toLowerCase()} runs after that are handled by the scheduler. Each run uses one scan from your plan — pause anytime from scan history.
+                  </p>
+                )}
+              </section>
+
+
+              <section className={styles.formSection}>
+                <div className={styles.formSectionHead}>
+                  <span className={styles.stepBadge}>3</span>
+                  <div>
                     <h2 className={styles.formSectionTitle}>Scope configuration</h2>
                     <p className={styles.formSectionDesc}>Scan only digital assets within your authorized organizational perimeter.</p>
                   </div>
@@ -805,7 +875,7 @@ export default function DashboardPage() {
 
               <section className={styles.formSection}>
                 <div className={styles.formSectionHead}>
-                  <span className={styles.stepBadge}>3</span>
+                  <span className={styles.stepBadge}>4</span>
                   <div>
                     <h2 className={styles.formSectionTitle}>AI reasoning model &amp; depth</h2>
                     <p className={styles.formSectionDesc}>Configure frontier reasoning models and autonomous scan intensity.</p>
@@ -856,8 +926,12 @@ export default function DashboardPage() {
                   disabled={scanProgress.status === 'running'}
                   onClick={startScan}
                 >
-                  <RadarIcon size={16} />
-                  {scanProgress.status === 'running' ? 'Scan in progress…' : 'Launch scan'}
+                  {schedule === 'manual' ? <RadarIcon size={16} /> : <CalendarIcon size={16} />}
+                  {scanProgress.status === 'running'
+                    ? 'Scan in progress…'
+                    : schedule === 'manual'
+                      ? 'Launch scan'
+                      : 'Schedule & run first scan'}
                 </button>
               </div>
             </div>

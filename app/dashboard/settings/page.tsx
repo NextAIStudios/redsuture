@@ -10,7 +10,7 @@ import {
   SearchIcon, ExternalLinkIcon, type IconProps,
 } from '../../components/icons';
 import {
-  GitHubBrand, GitLabBrand, BitbucketBrand, SlackBrand, TeamsBrand, JiraBrand,
+  GitHubBrand, GitLabBrand, BitbucketBrand, SlackBrand, JiraBrand,
   LinearBrand, AwsBrand, VercelBrand, SupabaseBrand, CloudflareBrand, GoogleCloudBrand, RailwayBrand,
 } from '../../components/brands';
 import {
@@ -49,7 +49,6 @@ const CODE_PROVIDERS: Integration[] = [
 ];
 const NOTIFICATIONS: Integration[] = [
   { name: 'Slack', Brand: SlackBrand },
-  { name: 'Microsoft Teams', Brand: TeamsBrand, soon: true },
 ];
 const ISSUE_TRACKERS: Integration[] = [
   { name: 'Jira', Brand: JiraBrand },
@@ -363,7 +362,7 @@ export default function SettingsPage() {
               </section>
 
               <section className={styles.card}>
-                <h2 className={styles.cardTitle}>Add a card to keep using Strix</h2>
+                <h2 className={styles.cardTitle}>Add a card to keep using RedSuture</h2>
                 <div className={styles.rowBetween}>
                   <span className={styles.rowSub}>Keep full access to every feature. You are not charged until your trial ends.</span>
                   <button className={styles.primaryBtn} onClick={() => needsProvider('Adding a card')}>Add card</button>

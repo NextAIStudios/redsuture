@@ -1780,3 +1780,98 @@
 .agent_crashed { color: #f87171; }
 .agent_stopped,
 .agent_budget_paused { color: var(--text-muted); }
+
+/* ─── New-scan schedule options ────────────────────────────── */
+
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.scheduleOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.scheduleOption:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.scheduleOptionActive,
+.scheduleOptionActive:hover {
+  border-color: rgba(229, 56, 59, 0.6);
+  background: rgba(229, 56, 59, 0.06);
+  box-shadow: 0 0 0 1px rgba(229, 56, 59, 0.25);
+}
+
+.scheduleOptionLocked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.scheduleTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.scheduleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.scheduleLabel svg {
+  color: var(--text-secondary);
+}
+
+.scheduleOptionActive .scheduleLabel svg {
+  color: var(--red-bright);
+}
+
+.scheduleLock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scheduleDesc {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.scheduleNote {
+  margin-top: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
