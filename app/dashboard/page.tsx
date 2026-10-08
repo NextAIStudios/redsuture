@@ -635,7 +635,7 @@ export default function DashboardPage() {
               <DownloadIcon size={14} /> Export audit bundle
             </button>
             <button className="btn-primary" onClick={() => setActiveTab('new-scan')}>
-              <PlusIcon size={14} /> Launch scan
+              <PlusIcon size={14} /> New scan
             </button>
           </div>
         </header>
@@ -839,7 +839,7 @@ export default function DashboardPage() {
                   onClick={startScan}
                 >
                   <RadarIcon size={16} />
-                  {scanProgress.status === 'running' ? 'Autonomous Scan in Progress…' : 'Launch Autonomous Assessment'}
+                  {scanProgress.status === 'running' ? 'Scan in progress…' : 'Launch scan'}
                 </button>
               </div>
             </div>

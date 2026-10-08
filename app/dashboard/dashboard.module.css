@@ -1532,8 +1532,6 @@
 }
 
 .formActions {
-  position: sticky;
-  bottom: 16px;
   display: flex;
   justify-content: flex-end;
   padding-top: 4px;
@@ -1543,14 +1541,9 @@
   height: 44px;
   padding: 0 24px;
   font-size: 0.9375rem;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 768px) {
-  .formActions {
-    position: static;
-  }
-
   .launchBtn {
     width: 100%;
   }
