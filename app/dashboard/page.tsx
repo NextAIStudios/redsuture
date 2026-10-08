@@ -210,6 +210,14 @@ interface AgentActivity {
   depth: number;
 }
 
+interface AgentStep {
+  seq: number;
+  kind: 'message' | 'tool' | 'output';
+  role?: string;
+  tool?: string;
+  text: string;
+}
+
 interface ScanProgress {
   status: ScanStatus;
   phase: string;
@@ -261,6 +269,11 @@ export default function DashboardPage() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Agent drill-down: the agent whose steps are shown, and that agent's steps.
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const selectedAgentRef = useRef<string | null>(null);
+  const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
+
   const showToast = (msg: string) => {
     setCopyToast(msg);
     setTimeout(() => setCopyToast(null), 3000);
@@ -279,10 +292,31 @@ export default function DashboardPage() {
     showToast(`Downloaded ${filename}`);
   };
 
+  // Select an agent to reveal its live steps (toggles off when re-clicked).
+  const selectAgent = (agentId: string) => {
+    const next = selectedAgentId === agentId ? null : agentId;
+    setSelectedAgentId(next);
+    selectedAgentRef.current = next;
+    setAgentSteps([]);
+    if (next && activeRunId) {
+      fetch(`/api/scan/${activeRunId}?agent=${encodeURIComponent(next)}`)
+        .then(r => r.json())
+        .then(d => {
+          if (selectedAgentRef.current === next && Array.isArray(d.steps)) setAgentSteps(d.steps);
+        })
+        .catch(() => {});
+    }
+  };
+
   const pollScan = useCallback(async (runId: string) => {
     try {
-      const res = await fetch(`/api/scan/${runId}`);
+      const agentParam = selectedAgentRef.current ? `?agent=${encodeURIComponent(selectedAgentRef.current)}` : '';
+      const res = await fetch(`/api/scan/${runId}${agentParam}`);
       const data = await res.json();
+
+      if (selectedAgentRef.current && Array.isArray(data.steps)) {
+        setAgentSteps(data.steps);
+      }
 
       setScanProgress(prev => ({
         ...prev,
@@ -394,7 +428,10 @@ export default function DashboardPage() {
       tokens: 0,
       agents: [],
     });
-    setActiveTab('overview');
+    setSelectedAgentId(null);
+    selectedAgentRef.current = null;
+    setAgentSteps([]);
+    setActiveTab('new-scan');
 
     try {
       const res = await fetch('/api/scan', {
@@ -438,6 +475,108 @@ export default function DashboardPage() {
   };
 
   const pageMeta = PAGE_META[activeTab];
+
+  const liveScanCard = scanProgress.status !== 'idle' && (
+    <section className={styles.panel}>
+      <div className={styles.liveHeader}>
+        <div className={styles.liveIndicator}>
+          {scanProgress.status === 'running' && <><span className={styles.liveDot} /> Scan in progress</>}
+          {scanProgress.status === 'complete' && <span className={styles.liveDone}><CheckIcon size={14} /> Scan complete</span>}
+          {scanProgress.status === 'error' && <span className={styles.liveError}><AlertIcon size={14} /> Scan failed</span>}
+        </div>
+        <span className={styles.livePhase}>{scanProgress.phase}</span>
+        <span className={styles.liveProgress}>{scanProgress.progress}%</span>
+      </div>
+      <div className={styles.progressBar}>
+        <div className={styles.progressFill} style={{ width: `${scanProgress.progress}%` }} />
+      </div>
+
+      {scanProgress.agents.length > 0 && (
+        <div className={styles.agentsPanel}>
+          <div className={styles.agentsHead}>
+            <span>Agent team</span>
+            <span className={styles.agentsActive}>
+              {scanProgress.agents.filter(a => a.status === 'running' || a.status === 'waiting').length} active
+              {' · '}{scanProgress.agents.length} total
+            </span>
+          </div>
+          <ul className={styles.agentList}>
+            {scanProgress.agents.map(a => {
+              const isSelected = selectedAgentId === a.id;
+              return (
+                <li key={a.id} className={styles.agentItem}>
+                  <button
+                    type="button"
+                    className={`${styles.agentRow} ${isSelected ? styles.agentRowSelected : ''}`}
+                    style={{ paddingLeft: `${12 + a.depth * 18}px` }}
+                    onClick={() => selectAgent(a.id)}
+                    aria-expanded={isSelected}
+                  >
+                    <span className={`${styles.agentDot} ${styles[`agent_${a.status}`] || ''}`} />
+                    <div className={styles.agentBody}>
+                      <div className={styles.agentTop}>
+                        <span className={styles.agentName}>{a.name}</span>
+                        <span className={`${styles.agentStatus} ${styles[`agent_${a.status}`] || ''}`}>
+                          {AGENT_STATUS_LABEL[a.status] || a.status}
+                        </span>
+                        <ChevronRightIcon
+                          size={14}
+                          className={`${styles.agentChevron} ${isSelected ? styles.agentChevronOpen : ''}`}
+                        />
+                      </div>
+                      {a.task && <div className={styles.agentTask}>{a.task}</div>}
+                      {a.skills.length > 0 && (
+                        <div className={styles.agentSkills}>
+                          {a.skills.slice(0, 5).map(sk => (
+                            <span key={sk} className={styles.agentSkill}>{sk}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+
+                  {isSelected && (
+                    <div className={styles.agentSteps}>
+                      {agentSteps.length === 0 ? (
+                        <div className={styles.agentStepsEmpty}>Waiting for this agent’s first step…</div>
+                      ) : (
+                        <ol className={styles.stepList}>
+                          {agentSteps.map(step => (
+                            <li key={step.seq} className={styles.stepRow}>
+                              <span className={`${styles.stepKind} ${styles[`step_${step.kind}`] || ''}`}>
+                                {step.kind === 'tool' ? (step.tool || 'tool') : step.kind === 'output' ? 'result' : step.role || 'message'}
+                              </span>
+                              <span className={styles.stepText}>{step.text}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      <div className={styles.scanLog} ref={logRef}>
+        {scanProgress.messages.map((msg, i) => (
+          <div key={i} className={styles.logLine}>
+            <span className={styles.logTag}>{msg.split(']')[0]}]</span>
+            <span className={`${styles.logMsg} ${msg.includes('AGENT') || msg.includes('AI') ? styles.logAgent : msg.includes('complete') ? styles.logSuccess : ''}`}>
+              {msg.split(']')[1] || msg}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className={styles.scanMeta}>
+        <span>{scanProgress.findings} verified findings</span>
+        <span>{(scanProgress.tokens / 1000).toFixed(0)}K tokens used</span>
+        {activeRunId && <span>Run <code>{activeRunId}</code></span>}
+      </div>
+    </section>
+  );
 
   return (
     <div className={`${styles.layout} ${sidebarCollapsed ? styles.layoutCollapsed : ''}`}>
@@ -517,78 +656,6 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-
-              {scanProgress.status !== 'idle' && (
-                <section className={styles.panel}>
-                  <div className={styles.liveHeader}>
-                    <div className={styles.liveIndicator}>
-                      {scanProgress.status === 'running' && <><span className={styles.liveDot} /> Scan in progress</>}
-                      {scanProgress.status === 'complete' && <span className={styles.liveDone}><CheckIcon size={14} /> Scan complete</span>}
-                      {scanProgress.status === 'error' && <span className={styles.liveError}><AlertIcon size={14} /> Scan failed</span>}
-                    </div>
-                    <span className={styles.livePhase}>{scanProgress.phase}</span>
-                    <span className={styles.liveProgress}>{scanProgress.progress}%</span>
-                  </div>
-                  <div className={styles.progressBar}>
-                    <div className={styles.progressFill} style={{ width: `${scanProgress.progress}%` }} />
-                  </div>
-
-                  {scanProgress.agents.length > 0 && (
-                    <div className={styles.agentsPanel}>
-                      <div className={styles.agentsHead}>
-                        <span>Agent team</span>
-                        <span className={styles.agentsActive}>
-                          {scanProgress.agents.filter(a => a.status === 'running' || a.status === 'waiting').length} active
-                          {' · '}{scanProgress.agents.length} total
-                        </span>
-                      </div>
-                      <ul className={styles.agentList}>
-                        {scanProgress.agents.map(a => (
-                          <li
-                            key={a.id}
-                            className={styles.agentRow}
-                            style={{ paddingLeft: `${12 + a.depth * 18}px` }}
-                          >
-                            <span className={`${styles.agentDot} ${styles[`agent_${a.status}`] || ''}`} />
-                            <div className={styles.agentBody}>
-                              <div className={styles.agentTop}>
-                                <span className={styles.agentName}>{a.name}</span>
-                                <span className={`${styles.agentStatus} ${styles[`agent_${a.status}`] || ''}`}>
-                                  {AGENT_STATUS_LABEL[a.status] || a.status}
-                                </span>
-                              </div>
-                              {a.task && <div className={styles.agentTask}>{a.task}</div>}
-                              {a.skills.length > 0 && (
-                                <div className={styles.agentSkills}>
-                                  {a.skills.slice(0, 5).map(sk => (
-                                    <span key={sk} className={styles.agentSkill}>{sk}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className={styles.scanLog} ref={logRef}>
-                    {scanProgress.messages.map((msg, i) => (
-                      <div key={i} className={styles.logLine}>
-                        <span className={styles.logTag}>{msg.split(']')[0]}]</span>
-                        <span className={`${styles.logMsg} ${msg.includes('AGENT') || msg.includes('AI') ? styles.logAgent : msg.includes('complete') ? styles.logSuccess : ''}`}>
-                          {msg.split(']')[1] || msg}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className={styles.scanMeta}>
-                    <span>{scanProgress.findings} verified findings</span>
-                    <span>{(scanProgress.tokens / 1000).toFixed(0)}K tokens used</span>
-                    {activeRunId && <span>Run <code>{activeRunId}</code></span>}
-                  </div>
-                </section>
-              )}
 
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
@@ -761,6 +828,8 @@ export default function DashboardPage() {
                   />
                 </div>
               </section>
+
+              {liveScanCard}
 
               <div className={styles.formActions}>
                 <button

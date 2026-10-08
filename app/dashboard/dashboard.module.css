@@ -1589,14 +1589,98 @@
   overflow-y: auto;
 }
 
+.agentItem + .agentItem {
+  border-top: 1px solid var(--border);
+}
+
 .agentRow {
   display: flex;
   gap: 10px;
+  width: 100%;
   padding: 10px 14px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.agentRow + .agentRow {
+.agentRow:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.agentRowSelected,
+.agentRowSelected:hover {
+  background: rgba(229, 56, 59, 0.07);
+}
+
+.agentChevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.agentChevronOpen {
+  transform: rotate(90deg);
+  color: var(--red-bright);
+}
+
+/* Per-agent step drill-down */
+.agentSteps {
+  padding: 4px 14px 12px 32px;
+  background: rgba(255, 255, 255, 0.012);
   border-top: 1px solid var(--border);
+}
+
+.agentStepsEmpty {
+  padding: 10px 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.stepList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stepRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px 0;
+  align-items: start;
+}
+
+.stepRow + .stepRow {
+  border-top: 1px solid var(--border);
+}
+
+.stepKind {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-top: 1px;
+}
+
+.step_tool { color: #93c5fd; }
+.step_output { color: var(--green); }
+.step_message { color: var(--text-secondary); }
+
+.stepText {
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  word-break: break-word;
 }
 
 .agentDot {

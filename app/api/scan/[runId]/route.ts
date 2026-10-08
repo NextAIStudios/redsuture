@@ -145,6 +145,113 @@ function parseAgents(agentsPath: string): AgentNode[] {
   return ordered;
 }
 
+interface AgentStep {
+  seq: number;
+  kind: 'message' | 'tool' | 'output';
+  role?: string;
+  tool?: string;
+  text: string;
+}
+
+function contentToText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .map(part => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part === 'object') {
+          const p = part as Record<string, unknown>;
+          return (p.text ?? p.output_text ?? p.content ?? '') as string;
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join(' ');
+  }
+  if (content && typeof content === 'object') {
+    const c = content as Record<string, unknown>;
+    if (typeof c.output === 'string') return c.output;
+  }
+  return '';
+}
+
+function truncate(text: string, max = 600): string {
+  const t = text.replace(/\s+/g, ' ').trim();
+  return t.length > max ? `${t.slice(0, max)}…` : t;
+}
+
+// Minimal shape of node:sqlite (Node 22.5+); typed locally since the bundled
+// @types/node may not declare it.
+interface SqliteStatement {
+  all(...params: unknown[]): unknown[];
+}
+interface SqliteDatabase {
+  prepare(sql: string): SqliteStatement;
+  close(): void;
+}
+interface SqliteModule {
+  DatabaseSync: new (path: string, options?: { readOnly?: boolean }) => SqliteDatabase;
+}
+
+// Read one agent's step-by-step actions (messages, tool calls, tool outputs)
+// from Strix's agents.db (SQLite WAL, written live by the scan). Uses Node's
+// built-in node:sqlite; degrades to [] on Node versions without it.
+async function readAgentSteps(dbPath: string, agentId: string): Promise<AgentStep[]> {
+  if (!fs.existsSync(dbPath)) return [];
+  let sqlite: SqliteModule;
+  try {
+    // Non-literal specifier so the bundler/TS don't try to resolve node:sqlite.
+    const mod = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ 'node:' + 'sqlite');
+    sqlite = mod as unknown as SqliteModule;
+  } catch {
+    return []; // Node < 22.5 has no node:sqlite
+  }
+
+  let db: SqliteDatabase | null = null;
+  const steps: AgentStep[] = [];
+  try {
+    db = new sqlite.DatabaseSync(dbPath, { readOnly: true });
+    const rows = db
+      .prepare(
+        'SELECT message_data FROM agent_messages WHERE session_id = ? ORDER BY id',
+      )
+      .all(agentId) as { message_data: string }[];
+
+    let seq = 0;
+    for (const row of rows) {
+      let item: Record<string, unknown>;
+      try {
+        item = JSON.parse(row.message_data);
+      } catch {
+        continue;
+      }
+      const type = item.type as string | undefined;
+      const role = item.role as string | undefined;
+
+      if ((type === undefined || type === 'message') && (role === 'user' || role === 'assistant')) {
+        const text = truncate(contentToText(item.content));
+        if (text) steps.push({ seq: seq++, kind: 'message', role, text });
+      } else if (type === 'function_call') {
+        const tool = String(item.name ?? 'tool');
+        const args = typeof item.arguments === 'string' ? item.arguments : JSON.stringify(item.arguments ?? {});
+        steps.push({ seq: seq++, kind: 'tool', tool, text: truncate(args, 300) });
+      } else if (type === 'function_call_output') {
+        const text = truncate(contentToText(item.output));
+        if (text) steps.push({ seq: seq++, kind: 'output', text });
+      }
+    }
+  } catch {
+    return steps;
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      /* already closed */
+    }
+  }
+  return steps;
+}
+
 function parseRunJson(runJsonPath: string) {
   try {
     return JSON.parse(fs.readFileSync(runJsonPath, 'utf8'));
@@ -163,10 +270,11 @@ function tailLog(logPath: string, lines = 50): string[] {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ runId: string }> }
 ) {
   const { runId } = await context.params;
+  const selectedAgent = new URL(request.url).searchParams.get('agent');
   const metaPath = path.join(RUNS_DIR, `${runId}.meta.json`);
   const runDir = path.join(RUNS_DIR, runId);
 
@@ -184,6 +292,10 @@ export async function GET(
   const isComplete = fs.existsSync(sarifPath) || meta.status === 'complete';
   const findings = isComplete ? parseSarif(sarifPath) : [];
   const agents = parseAgents(path.join(strixDir, '.state', 'agents.json'));
+  const steps =
+    selectedAgent && agents.some(a => a.id === selectedAgent)
+      ? await readAgentSteps(path.join(strixDir, '.state', 'agents.db'), selectedAgent)
+      : [];
   const logs = tailLog(logPath);
   const runJson = parseRunJson(runJsonPath);
 
@@ -225,6 +337,8 @@ export async function GET(
     findings,
     agents,
     activeAgents: agents.filter(a => a.status === 'running' || a.status === 'waiting').length,
+    selectedAgent: selectedAgent || null,
+    steps,
     counts,
     logs: logs.slice(-30),
     tokenInfo,
