@@ -41,7 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# strix scan output
+# scan engine output
+scan_runs/
 strix_runs/
 
 # env secrets

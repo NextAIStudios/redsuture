@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
-import { runStrixScan } from './engine';
+import { runScan } from './engine';
 
-const RUNS_DIR = path.join(process.cwd(), 'strix_runs');
+const RUNS_DIR = path.join(process.cwd(), 'scan_runs');
 
 interface ScanMeta {
   runId: string;
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       targets,
       targetType = 'url',
       mode = 'quick',
-      llm = 'anthropic/claude-sonnet-4-6',
+      llm = process.env.RS_MODEL || 'anthropic/claude-sonnet-4-6',
       instructions,
     } = await request.json();
 
@@ -77,9 +77,9 @@ export async function POST(request: Request) {
     };
     fs.writeFileSync(metaPath, JSON.stringify(initialMeta, null, 2));
 
-    // Launch the real Strix pentest in the background. The engine handles model
+    // Launch the scan in the background. The engine handles model
     // fallback and honest error reporting; progress is read via GET /api/scan/<runId>.
-    runStrixScan({
+    runScan({
       runId,
       targets: finalTargets,
       targetType,

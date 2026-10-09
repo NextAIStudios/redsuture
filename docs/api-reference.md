@@ -5,7 +5,7 @@ JSON. There is **no authentication** on these routes yet — see [Auth & onboard
 
 ## `POST /api/scan`
 
-Starts a Strix pentest in the background and returns immediately.
+Starts a the engine pentest in the background and returns immediately.
 [`app/api/scan/route.ts`](../app/api/scan/route.ts)
 
 ### Request body
@@ -16,8 +16,8 @@ Starts a Strix pentest in the background and returns immediately.
 | `target` | `string` | — | Single-target convenience; used if `targets` is empty. |
 | `targetType` | `string` | `"url"` | `url` · `repo` · `dir` · `whitebox` · `list`. For `list`, the first target is treated as a path passed to `--target-list`. |
 | `mode` | `string` | `"quick"` | `quick` · `standard` · `deep`. |
-| `llm` | `string` | `anthropic/claude-sonnet-4-6` | Primary model (LiteLLM format). Fallbacks follow (see [Strix engine](strix-engine.md#model-fallback-backup-models)). |
-| `instructions` | `string` | — | Free-text scope notes / credentials / focus. Passed to Strix as `--instruction`. |
+| `llm` | `string` | `anthropic/claude-sonnet-4-6` | Primary model (LiteLLM format). Fallbacks follow (see [scan engine](engine.md#model-fallback-backup-models)). |
+| `instructions` | `string` | — | Free-text scope notes / credentials / focus. Passed to the engine as `--instruction`. |
 | `schedule` | `string` | `"manual"` | `manual` · `weekly` · `monthly` · `daily` · `continuous`. Stored with the request; recurring execution needs a scheduler backend. |
 
 At least one non-empty target is required (else `400`).
@@ -40,7 +40,7 @@ curl -X POST http://localhost:3333/api/scan \
 
 ## `GET /api/scan`
 
-Lists all scans, newest first, by reading every `*.meta.json` in `strix_runs/`.
+Lists all scans, newest first, by reading every `*.meta.json` in `scan_runs/`.
 
 ### Response
 
@@ -113,7 +113,7 @@ the payload but **does not call the GitHub API** — no branch or PR is actually
   "targetBranch": "main", "prNumber": 1234,
   "prUrl": "https://github.com/owner/repo/pull/1234",
   "title": "[RedSuture Security Fix] ...", "status": "opened", "filesChanged": 1,
-  "commits": 1, "verifiedBy": "Strix AI Validation Agent", "createdAt": "ISO", "patch": "..." }
+  "commits": 1, "verifiedBy": "the engine AI Validation Agent", "createdAt": "ISO", "patch": "..." }
 ```
 
 `400` if `repoUrl` is missing.

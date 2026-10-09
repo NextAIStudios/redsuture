@@ -28,7 +28,7 @@ app/
 ├── api/
 │   ├── scan/
 │   │   ├── route.ts           POST (start) + GET (list) scans
-│   │   ├── engine.ts          runStrixScan(): spawn Strix, model fallback
+│   │   ├── engine.ts          runScan(): spawn the engine, model fallback
 │   │   └── [runId]/route.ts   GET status/logs/agents/steps/findings
 │   └── github/pr/route.ts     POST: build a fix-PR payload (stub)
 │
@@ -50,7 +50,7 @@ app/
 | [`app/dashboard/page.tsx`](../app/dashboard/page.tsx) | The whole dashboard; scan launch, polling, agents, steps, scheduling |
 | [`app/dashboard/settings/page.tsx`](../app/dashboard/settings/page.tsx) | Settings sections |
 | [`app/api/scan/route.ts`](../app/api/scan/route.ts) | Start / list scans |
-| [`app/api/scan/engine.ts`](../app/api/scan/engine.ts) | Strix runner + model fallback |
+| [`app/api/scan/engine.ts`](../app/api/scan/engine.ts) | the engine runner + model fallback |
 | [`app/api/scan/[runId]/route.ts`](../app/api/scan/[runId]/route.ts) | Live scan status + SARIF / agent / step parsing |
 | [`app/lib/profile.ts`](../app/lib/profile.ts) | Account store + auth flag |
 | [`app/globals.css`](../app/globals.css) | Design system |
@@ -71,7 +71,7 @@ app/
 
 | Path | Note |
 |------|------|
-| `strix_runs/` | Scan output written by Strix (git-ignored) |
+| `scan_runs/` | Scan output written by the engine (git-ignored) |
 | `.env.local` | Secrets (git-ignored; only `.env.example` is committed) |
 | `.next/`, `node_modules/` | Build output / deps |
 

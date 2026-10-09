@@ -4,7 +4,7 @@ import Link from 'next/link';
 import styles from './docs.module.css';
 import {
   SearchIcon, CopyIcon, CheckIcon, RadarIcon, CodeIcon, ListIcon, GitIcon,
-  LayersIcon, ExternalLinkIcon, ArrowRightIcon,
+  LayersIcon, ArrowRightIcon,
 } from '../../components/icons';
 
 type NavGroup = { group: string; items: { id: string; label: string }[] };
@@ -31,7 +31,7 @@ const NAV: NavGroup[] = [
     items: [
       { id: 'github-pr', label: 'Open a fix PR' },
       { id: 'models', label: 'Models & environment' },
-      { id: 'engine', label: 'Strix engine' },
+      { id: 'engine', label: 'Scan engine' },
     ],
   },
 ];
@@ -190,7 +190,7 @@ export default function DocsPage() {
             <span className={styles.eyebrow}>Developer documentation</span>
             <h1 className={styles.heroTitle}>Pentest your app in minutes.</h1>
             <p className={styles.lead}>
-              One API call starts an autonomous Strix pentest. Poll it for live agent
+              One API call starts an autonomous pentest. Poll it for live agent
               activity and findings, each with a proof of concept and a ready-to-merge fix.
             </p>
             <div className={styles.cards}>
@@ -217,8 +217,8 @@ export default function DocsPage() {
             <p>Make sure Docker is running and your environment is set, then start a scan and poll it.</p>
             <h3>1. Configure</h3>
             <CodeBlock lang="bash" code={`# .env.local
-STRIX_LLM=anthropic/claude-sonnet-4-6
-LLM_API_KEY=your-provider-api-key`} />
+RS_MODEL=anthropic/claude-sonnet-4-6
+RS_API_KEY=your-provider-api-key`} />
             <h3>2. Start a scan</h3>
             <CodeBlock lang="bash" code={`curl -X POST http://localhost:3333/api/scan \\
   -H "Content-Type: application/json" \\
@@ -227,7 +227,7 @@ LLM_API_KEY=your-provider-api-key`} />
             <h3>3. Poll for progress &amp; findings</h3>
             <CodeBlock lang="bash" code={`curl "http://localhost:3333/api/scan/api-example-com_m1a2b3"`} />
             <div className={styles.warn}>
-              Only scan assets you own or have explicit written permission to test. Strix actively attacks the target.
+              Only scan assets you own or have explicit written permission to test. The engine actively attacks the target.
             </div>
           </section>
 
@@ -249,14 +249,14 @@ LLM_API_KEY=your-provider-api-key`} />
           <section id="start-scan" className={styles.section}>
             <h2>Start a scan</h2>
             <Endpoint method="POST" path="/api/scan" />
-            <p>Starts a Strix pentest in the background and returns a <code>runId</code> immediately.</p>
+            <p>Starts a pentest in the background and returns a <code>runId</code> immediately.</p>
             <h3>Body</h3>
             <Field name="targets" type="string[]" req>One or more targets. Blank entries are dropped.</Field>
             <Field name="target" type="string">Single-target convenience; used if <code>targets</code> is empty.</Field>
             <Field name="targetType" type="string"><code>url</code> · <code>repo</code> · <code>dir</code> · <code>whitebox</code> · <code>list</code>. Default <code>url</code>.</Field>
             <Field name="mode" type="string"><code>quick</code> · <code>standard</code> · <code>deep</code>. Default <code>quick</code>.</Field>
             <Field name="llm" type="string">Primary model, LiteLLM format. Default <code>anthropic/claude-sonnet-4-6</code>. Fallbacks follow automatically.</Field>
-            <Field name="instructions" type="string">Scope notes, credentials or focus; passed to Strix as <code>--instruction</code>.</Field>
+            <Field name="instructions" type="string">Scope notes, credentials or focus passed to the engine.</Field>
             <Field name="schedule" type="string"><code>manual</code> · <code>weekly</code> · <code>monthly</code> · <code>daily</code> · <code>continuous</code>. Default <code>manual</code>.</Field>
             <h3>Example</h3>
             <CodeBlock lang="javascript" code={`const res = await fetch('/api/scan', {
@@ -315,7 +315,7 @@ const { runId } = await res.json();`} />
           <section id="agents" className={styles.section}>
             <h2>Agents &amp; steps</h2>
             <p>
-              Strix runs a graph of specialized agents (recon, exploitation, validation,
+              RedSuture runs a graph of specialized agents (recon, exploitation, validation,
               remediation). The poll response includes the live <code>agents</code> tree;
               request one agent&apos;s <code>steps</code> to see exactly what it&apos;s doing.
             </p>
@@ -333,7 +333,7 @@ const { runId } = await res.json();`} />
             <CodeBlock lang="bash" code={`curl "http://localhost:3333/api/scan/<runId>?agent=exploit"
 # steps: [ { kind: "message" | "tool" | "output", tool?, role?, text } ]`} />
             <div className={styles.note}>
-              Steps come from Strix&apos;s SQLite database and require <strong>Node 22.5+</strong>{' '}
+              Steps come from the engine&apos;s database and require <strong>Node 22.5+</strong>{' '}
               (built-in <code>node:sqlite</code>). On older Node the agent tree still works; steps come back empty.
             </div>
           </section>
@@ -358,41 +358,34 @@ const { runId } = await res.json();`} />
           {/* Models */}
           <section id="models" className={styles.section}>
             <h2>Models &amp; environment</h2>
-            <p>Strix talks to 100+ providers through LiteLLM. Set the primary model and key, and an optional fallback chain.</p>
+            <p>The engine reaches 100+ model providers. Set the primary model and key, and an optional fallback chain.</p>
             <CodeBlock lang="bash" code={`# Primary model (LiteLLM format) and its key
-STRIX_LLM=anthropic/claude-sonnet-4-6
-LLM_API_KEY=your-provider-api-key
+RS_MODEL=anthropic/claude-sonnet-4-6
+RS_API_KEY=your-provider-api-key
 
 # Optional: comma-separated backup models, tried in order on provider failure.
 # Unset → anthropic/claude-sonnet-4-6 → openai/gpt-5.4 → openrouter/z-ai/glm-5.3
-STRIX_LLM_FALLBACKS=openai/gpt-5.4,openrouter/z-ai/glm-5.3
+RS_MODEL_FALLBACKS=openai/gpt-5.4,openrouter/z-ai/glm-5.3
 
-# Optional: path to the Strix binary (default ~/.strix/bin/strix, then PATH)
-STRIX_BIN=`} />
-            <p>Each scan tries the requested model first, then each fallback — every attempt is a real Strix run. Pass <code>llm</code> on the request to override the primary per scan.</p>
+# Optional: path to the engine binary
+RS_ENGINE_BIN=`} />
+            <p>Each scan tries the requested model first, then each fallback — every attempt is a real scan. Pass <code>llm</code> on the request to override the primary per scan.</p>
           </section>
 
           {/* Engine */}
           <section id="engine" className={styles.section}>
-            <h2>Strix engine</h2>
-            <p>A scan spawns the real Strix CLI in an isolated working directory. Strix writes results to disk; the poll route reads them back.</p>
-            <CodeBlock lang="text" code={`strix_runs/
-├── <runId>.meta.json          # status, model, targets
-└── <runId>/                   # spawn cwd
-    ├── strix.log              # orchestration log + Strix output
-    └── strix_runs/<auto>/     # Strix's own run dir
-        ├── findings.sarif     # SARIF 2.1.0 results
-        ├── .state/agents.json # live agent graph
-        ├── .state/agents.db   # per-agent step stream (SQLite)
-        └── run.json`} />
+            <h2>Scan engine</h2>
+            <p>
+              Each scan runs RedSuture&apos;s autonomous engine in an isolated workspace.
+              The engine writes its results to a per-run directory that the poll route
+              reads back.
+            </p>
             <ul className={styles.list}>
-              <li>Strix exits <code>0</code> (no findings) or <code>2</code> (findings) on success — both count as success.</li>
-              <li>If Strix is missing or every model fails, the run is marked <code>error</code> — never a fabricated result.</li>
-              <li><code>strix_runs/</code> is git-ignored.</li>
+              <li>Every run produces SARIF 2.1.0 findings, a live agent graph, a per-agent step stream, and logs.</li>
+              <li>A run with no findings and a run with findings are both successful completions.</li>
+              <li>If the engine is unavailable or every model fails, the run is marked <code>error</code> — never a fabricated result.</li>
+              <li>Run output stays on your machine and is git-ignored.</li>
             </ul>
-            <a className={styles.extLink} href="https://github.com/usestrix/strix" target="_blank" rel="noopener noreferrer">
-              Strix on GitHub <ExternalLinkIcon />
-            </a>
           </section>
         </main>
 

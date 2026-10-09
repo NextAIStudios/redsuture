@@ -60,7 +60,7 @@ An empty state ("No audit events yet") — there's no audit log backend to read 
 
 ## Help & Support
 
-External links: **Documentation** (Strix on GitHub) and **Contact support**
+External links: **Documentation** (the engine on GitHub) and **Contact support**
 (`mailto:`).
 
 ## Layout

@@ -56,15 +56,15 @@ and the UI notes that later runs are handled by the scheduler.
 While a scan runs, a card on the New scan tab shows:
 
 - a **status/phase/progress** header,
-- the **Agent team** — every Strix agent, indented as a tree, with a status dot
+- the **Agent team** — every agent, indented as a tree, with a status dot
   (running pulses red, done is green, waiting is amber), its current **task**, and its
   **skills**,
 - a tailing **log**, and token/finding counters.
 
 Click an agent to expand its **steps** — the live, step-by-step actions it's taking
 (assistant messages, tool calls with arguments, tool outputs), colour-coded. Steps are
-fetched by adding `?agent=<id>` to the poll; they come from Strix's `agents.db`. See
-[Strix engine](strix-engine.md#agent-steps-agentsdb).
+fetched by adding `?agent=<id>` to the poll; they come from the engine's `agents.db`. See
+[scan engine](engine.md#agent-steps-agentsdb).
 
 ## Findings
 
@@ -90,5 +90,5 @@ Findings view for each.
 ## Error handling
 
 If a poll returns `status: 'error'`, the dashboard stops polling and shows the error
-message in the scan card — e.g. "Strix is not installed or not on PATH." It never shows
+message in the scan card — e.g. "The engine is not installed or not on PATH." It never shows
 a fabricated completed scan.

@@ -7,13 +7,13 @@
 
 ![RedSuture](https://img.shields.io/badge/RedSuture-v1.0-e5383b?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=nextdotjs)
-![Strix](https://img.shields.io/badge/Powered_by-Strix-e5383b?style=for-the-badge)
+![the engine](https://img.shields.io/badge/Powered_by-the engine-e5383b?style=for-the-badge)
 
 ---
 
 ## What is RedSuture?
 
-RedSuture deploys [Strix](https://github.com/usestrix/strix) AI agents that test your web apps, APIs and source code the way a real attacker would. Every finding is backed by a proof of concept, and each one ships with a remediation package: a code patch, a developer guide, an executive report and SARIF output.
+RedSuture deploys RedSuture's engine AI agents that test your web apps, APIs and source code the way a real attacker would. Every finding is backed by a proof of concept, and each one ships with a remediation package: a code patch, a developer guide, an executive report and SARIF output.
 
 ---
 
@@ -34,8 +34,8 @@ RedSuture deploys [Strix](https://github.com/usestrix/strix) AI agents that test
 |-------|-----------|
 | Framework | Next.js 16 (App Router, TypeScript) |
 | UI | React 19, CSS Modules, shared design tokens in `app/globals.css` |
-| Pentest engine | [Strix](https://github.com/usestrix/strix) (open source, runs in Docker) |
-| Default model | `anthropic/claude-sonnet-4-6` (any model Strix supports can be configured) |
+| Pentest engine | RedSuture's engine (open source, runs in Docker) |
+| Default model | `anthropic/claude-sonnet-4-6` (any model the engine supports can be configured) |
 
 ---
 
@@ -44,9 +44,9 @@ RedSuture deploys [Strix](https://github.com/usestrix/strix) AI agents that test
 ### Prerequisites
 
 - Node.js **20.9+** (required by Next.js 16)
-- [Strix CLI](https://github.com/usestrix/strix) installed (`curl -sSL https://strix.ai/install | bash`)
-- Docker, running (Strix uses it for its sandbox)
-- An API key for a model provider Strix supports
+- [the engine]() installed (`# install the RedSuture engine runtime`)
+- Docker, running (the engine uses it for its sandbox)
+- An API key for a model provider the engine supports
 
 ### Installation
 
@@ -61,9 +61,9 @@ cp .env.example .env.local   # then add your keys
 
 | Variable | Description |
 |----------|-------------|
-| `STRIX_LLM` | Model in LiteLLM format, e.g. `anthropic/claude-sonnet-4-6` |
-| `LLM_API_KEY` | API key for that model's provider |
-| `STRIX_BIN` | Path to the Strix binary (defaults to `~/.strix/bin/strix`) |
+| `RS_MODEL` | Model in LiteLLM format, e.g. `anthropic/claude-sonnet-4-6` |
+| `RS_API_KEY` | API key for that model's provider |
+| `RS_ENGINE_BIN` | Path to the engine binary (defaults to `~/<engine-install>/bin`) |
 | `PORT` | Dev server port (`3333` in the examples below) |
 
 ### Scripts
@@ -85,7 +85,7 @@ Detailed docs live in [`docs/`](docs/README.md):
 |-----|--------|
 | [Getting started](docs/getting-started.md) | Prerequisites, install, env vars, first scan |
 | [Architecture](docs/architecture.md) | Tech stack, request flow, design system |
-| [Strix engine](docs/strix-engine.md) | How scans run, model fallback, run dirs, live agent data |
+| [scan engine](docs/engine.md) | How scans run, model fallback, run dirs, live agent data |
 | [API reference](docs/api-reference.md) | Every `/api` route |
 | [Dashboard](docs/dashboard.md) | New scan, scheduling, live agents, findings |
 | [Settings](docs/settings.md) | General, Members, Billing, Integrations, Audit, Help |
@@ -107,13 +107,13 @@ app/
 │   ├── icons.tsx                      # Shared SVG icon set
 │   └── Logo.tsx                       # Brand mark used on every page
 ├── api/
-│   ├── scan/route.ts                  # Start and list Strix scans
+│   ├── scan/route.ts                  # Start and list the engine scans
 │   ├── scan/[runId]/route.ts          # Scan status, logs and findings
 │   └── github/pr/route.ts             # Fix pull request payload
 └── globals.css                        # Design tokens, buttons, badges
 ```
 
-Scan output is written to `strix_runs/` (git-ignored).
+Scan output is written to `scan_runs/` (git-ignored).
 
 ---
 
@@ -131,7 +131,7 @@ Scan output is written to `strix_runs/` (git-ignored).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/scan` | Start a Strix scan in the background |
+| `POST` | `/api/scan` | Start a the engine scan in the background |
 | `GET` | `/api/scan` | List all scans |
 | `GET` | `/api/scan/[runId]` | Scan status, recent logs, findings and severity counts |
 | `POST` | `/api/github/pr` | Build a fix pull request payload (GitHub API integration not wired up yet) |
@@ -174,4 +174,4 @@ RedSuture is for **authorized security testing only**. Only scan applications an
 
 **NextAI Studios** — building the next generation of AI-powered developer tools.
 
-*Powered by [Strix](https://github.com/usestrix/strix) — open-source autonomous AI penetration testing agents.*
+*Powered by RedSuture's engine — open-source autonomous AI penetration testing agents.*

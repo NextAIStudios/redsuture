@@ -447,12 +447,12 @@ export default function DashboardPage() {
 
     setScanProgress({
       status: 'running',
-      phase: 'Launching Strix agents…',
+      phase: 'Launching agents…',
       progress: 3,
       messages: [
         `[orchestrator] Target: ${targets.join(', ')}`,
         `[orchestrator] Scan mode: ${scanMode} · Model: ${aiModel}`,
-        `[orchestrator] Starting Strix — waiting for agents to come online…`,
+        `[orchestrator] Starting engine — waiting for agents to come online…`,
       ],
       findings: 0,
       tokens: 0,

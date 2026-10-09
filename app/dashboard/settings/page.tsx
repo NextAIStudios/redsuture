@@ -474,7 +474,7 @@ export default function SettingsPage() {
                   <FileTextIcon size={18} />
                   <div className={styles.rowText}>
                     <span className={styles.rowLabel}>Developer docs</span>
-                    <span className={styles.rowSub}>API reference, quickstart and the Strix engine.</span>
+                    <span className={styles.rowSub}>API reference, quickstart and the scan engine.</span>
                   </div>
                 </Link>
                 <a className={styles.helpRow} href="mailto:support@redsuture.com">

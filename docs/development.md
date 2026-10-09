@@ -46,17 +46,18 @@ Things that bit us already:
     <(grep -oE "\.[A-Za-z0-9_]+\b" app/dashboard/dashboard.module.css | sed 's/\.//' | sort -u)
   ```
   Any output is a referenced-but-undefined class.
-- **Don't `pkill -f strix`.** The dev server's working directory contains `strix_runs`,
-  and broad process kills can take the dev server down. Kill Strix test runs by PID.
-- **`strix_runs/` is local-only.** It's git-ignored; nothing there is committed.
+- **Don't broad-kill the engine process.** The dev server's working directory sits
+  near the engine's run output, so a broad `pkill` can take the dev server down too.
+  Stop engine test runs by PID instead.
+- **`scan_runs/` is local-only.** It's git-ignored; nothing there is committed.
 
 ## Testing a scan without a real target
 
-The engine always runs the **real** Strix binary — there is no mock. To exercise the
+The engine always runs the **real** the engine binary — there is no mock. To exercise the
 status route / UI without launching a live pentest, craft a run directory that matches
-Strix's layout (a `<runId>.meta.json`, a nested `strix_runs/<name>/findings.sarif`, and
+the engine's layout (a `<runId>.meta.json`, a nested `scan_runs/<name>/findings.sarif`, and
 optionally `.state/agents.json` + a small `agents.db`) and hit
-`GET /api/scan/<runId>`. See [Strix engine → Run-directory layout](strix-engine.md#run-directory-layout).
+`GET /api/scan/<runId>`. See [scan engine → Run-directory layout](engine.md#run-directory-layout).
 
 ## Git / branching
 
