@@ -470,13 +470,13 @@ export default function SettingsPage() {
             <div className={styles.stack}>
               <header className={styles.pageHead}><h1 className={styles.pageTitle}>Help &amp; Support</h1></header>
               <section className={styles.card}>
-                <a className={styles.helpRow} href="https://github.com/usestrix/strix" target="_blank" rel="noopener noreferrer">
-                  <LifeBuoyIcon size={18} />
+                <Link className={styles.helpRow} href="/dashboard/docs">
+                  <FileTextIcon size={18} />
                   <div className={styles.rowText}>
-                    <span className={styles.rowLabel}>Documentation</span>
-                    <span className={styles.rowSub}>Guides for scans, targets and remediation.</span>
+                    <span className={styles.rowLabel}>Developer docs</span>
+                    <span className={styles.rowSub}>API reference, quickstart and the Strix engine.</span>
                   </div>
-                </a>
+                </Link>
                 <a className={styles.helpRow} href="mailto:support@redsuture.com">
                   <MailIcon size={18} />
                   <div className={styles.rowText}>

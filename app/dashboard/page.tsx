@@ -6,7 +6,7 @@ import Logo from '../components/Logo';
 import {
   GridIcon, RadarIcon, AlertIcon, ClockIcon, PlusIcon, CheckIcon, ArrowRightIcon,
   ChevronRightIcon, DownloadIcon, CopyIcon, GlobeIcon, GitIcon, FolderIcon, LayersIcon, ListIcon,
-  FileCheckIcon, SettingsIcon, CalendarIcon, LockIcon, type IconProps,
+  FileCheckIcon, SettingsIcon, CalendarIcon, LockIcon, CodeIcon, type IconProps,
 } from '../components/icons';
 import { loadProfile, initials, type Profile } from '../lib/profile';
 
@@ -649,6 +649,10 @@ export default function DashboardPage() {
               {!sidebarCollapsed && <span>{item.label}</span>}
             </button>
           ))}
+          <Link href="/dashboard/docs" className={styles.navItem} title="Developer docs">
+            <CodeIcon size={18} />
+            {!sidebarCollapsed && <span>Developer docs</span>}
+          </Link>
         </nav>
 
         <div className={styles.sidebarFooter}>
