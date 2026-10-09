@@ -51,3 +51,6 @@ strix_runs/
 # local tooling / stray clone
 .claude/
 redsuture/
+
+# internal-only ops docs (never pushed)
+internal/
