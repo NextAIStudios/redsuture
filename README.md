@@ -77,6 +77,25 @@ npm run lint                 # ESLint
 
 ---
 
+## Documentation
+
+Detailed docs live in [`docs/`](docs/README.md):
+
+| Doc | Covers |
+|-----|--------|
+| [Getting started](docs/getting-started.md) | Prerequisites, install, env vars, first scan |
+| [Architecture](docs/architecture.md) | Tech stack, request flow, design system |
+| [Strix engine](docs/strix-engine.md) | How scans run, model fallback, run dirs, live agent data |
+| [API reference](docs/api-reference.md) | Every `/api` route |
+| [Dashboard](docs/dashboard.md) | New scan, scheduling, live agents, findings |
+| [Settings](docs/settings.md) | General, Members, Billing, Integrations, Audit, Help |
+| [Auth & onboarding](docs/auth-onboarding.md) | Sign-in/up, onboarding, the profile store |
+| [Pricing](docs/pricing.md) | The five-tier plan ladder |
+| [Project structure](docs/project-structure.md) | File-by-file reference |
+| [Development](docs/development.md) | Scripts, conventions, Next.js 16 notes |
+
+---
+
 ## Project Structure
 
 ```
