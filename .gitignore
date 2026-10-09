@@ -47,3 +47,7 @@ strix_runs/
 
 # env secrets
 .env*.local
+
+# local tooling / stray clone
+.claude/
+redsuture/
