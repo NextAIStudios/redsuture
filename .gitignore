@@ -43,7 +43,7 @@ next-env.d.ts
 
 # scan engine output
 scan_runs/
-strix_runs/
+*_runs/
 
 # env secrets
 .env*.local

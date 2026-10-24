@@ -4,22 +4,53 @@ import fs from 'fs';
 
 const RUNS_DIR = path.join(process.cwd(), 'scan_runs');
 
-// The engine runs inside <runDir> and writes its artifacts to a nested
-// auto-generated directory (the name carries a random suffix we can't
-// predict). Resolve the newest such directory; fall back to <runDir> itself,
-// where the orchestrator writes its own log and errors.
-function resolveEngineRunDir(runDir: string): string {
-  const nested = path.join(runDir, 'strix_runs');
+function listDirs(p: string): string[] {
   try {
-    const subs = fs
-      .readdirSync(nested)
-      .map(name => path.join(nested, name))
-      .filter(p => fs.statSync(p).isDirectory());
-    if (subs.length > 0) {
-      return subs.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
-    }
+    return fs
+      .readdirSync(p)
+      .map(name => path.join(p, name))
+      .filter(d => {
+        try {
+          return fs.statSync(d).isDirectory();
+        } catch {
+          return false;
+        }
+      });
   } catch {
-    /* no nested run dir yet */
+    return [];
+  }
+}
+
+function mtime(p: string): number {
+  try {
+    return fs.statSync(p).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+// A directory holds engine output if it carries the SARIF report or the live
+// state folder.
+function looksLikeRun(dir: string): boolean {
+  return fs.existsSync(path.join(dir, 'findings.sarif')) || fs.existsSync(path.join(dir, '.state'));
+}
+
+// The engine runs inside <runDir> and writes its artifacts into an
+// auto-generated directory tree whose names carry a random suffix we can't
+// predict. We locate it structurally rather than by name: scan <runDir>'s
+// subdirectories (and theirs) for the newest one that holds engine output.
+// A deployment may pin the intermediate directory with RS_ENGINE_RUN_SUBDIR.
+// Falls back to <runDir> itself, where the orchestrator writes its log/errors.
+function resolveEngineRunDir(runDir: string): string {
+  const pinned = process.env.RS_ENGINE_RUN_SUBDIR;
+  const intermediates = pinned ? [path.join(runDir, pinned)] : listDirs(runDir);
+  const leaves: string[] = [];
+  for (const mid of intermediates) leaves.push(...listDirs(mid));
+
+  const candidates = [...leaves, ...intermediates].filter(looksLikeRun);
+  const pool = candidates.length > 0 ? candidates : leaves;
+  if (pool.length > 0) {
+    return pool.sort((a, b) => mtime(b) - mtime(a))[0];
   }
   return runDir;
 }
@@ -58,8 +89,12 @@ function parseSarif(sarifPath: string): Finding[] {
   try {
     const sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf8'));
     const results: SarifResult[] = sarif?.runs?.[0]?.results || [];
+    const firstFingerprint = (fp?: Record<string, string>): string | undefined => {
+      const vals = fp ? Object.values(fp) : [];
+      return vals.length > 0 ? vals[0] : undefined;
+    };
     return results.map(r => ({
-      id: r.fingerprints?.['redsuture/v1'] || r.fingerprints?.['strix/v1'] || r.ruleId || Math.random().toString(36),
+      id: r.fingerprints?.['redsuture/v1'] || firstFingerprint(r.fingerprints) || r.ruleId || Math.random().toString(36),
       title: r.message?.text || 'Unknown finding',
       severity: r.properties?.severity || 'medium',
       cvss: r.properties?.cvss || 5.0,

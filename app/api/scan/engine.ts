@@ -1,7 +1,6 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 
 export interface ScanParams {
   runId: string;
@@ -27,7 +26,7 @@ const DEFAULT_FALLBACK_MODELS = [
 const ENGINE_SUCCESS_CODES = new Set([0, 2]);
 
 function resolveModelChain(primary: string): string[] {
-  const configured = process.env.RS_MODEL_FALLBACKS || process.env.STRIX_LLM_FALLBACKS;
+  const configured = process.env.RS_MODEL_FALLBACKS;
   const fallbacks = configured
     ? configured.split(',').map(s => s.trim()).filter(Boolean)
     : DEFAULT_FALLBACK_MODELS;
@@ -44,16 +43,28 @@ function resolveApiKey(): string {
   );
 }
 
-function resolveEngineBin(): string | null {
-  const explicit = process.env.RS_ENGINE_BIN || process.env.STRIX_BIN;
-  if (explicit && fs.existsSync(/*turbopackIgnore: true*/ explicit)) return explicit;
-  const home = path.join(os.homedir(), '.strix', 'bin', 'strix');
-  if (fs.existsSync(/*turbopackIgnore: true*/ home)) return home;
-  return null; // fall back to a PATH lookup of the engine
+// The engine's own command name and install directory are deployment details
+// (see the internal runbook); the committed source never hard-codes them. They
+// come from the environment, and `~` is expanded so a home-relative path works.
+function expandHome(p: string): string {
+  if (!p) return p;
+  if (p === '~') return process.env.HOME || p;
+  if (p.startsWith('~/')) return path.join(process.env.HOME || '', p.slice(2));
+  return p;
 }
 
-const ENGINE_HOME = path.join(os.homedir(), '.strix', 'bin');
-const ENGINE_FALLBACK_COMMAND = 'strix';
+const ENGINE_HOME = expandHome(process.env.RS_ENGINE_HOME || '');   // dir to prefix on PATH
+const ENGINE_FALLBACK_COMMAND = process.env.RS_ENGINE_COMMAND || ''; // bare command, resolved via PATH
+
+function resolveEngineBin(): string | null {
+  const explicit = expandHome(process.env.RS_ENGINE_BIN || '');
+  if (explicit && fs.existsSync(/*turbopackIgnore: true*/ explicit)) return explicit;
+  if (ENGINE_HOME && ENGINE_FALLBACK_COMMAND) {
+    const home = path.join(ENGINE_HOME, ENGINE_FALLBACK_COMMAND);
+    if (fs.existsSync(/*turbopackIgnore: true*/ home)) return home;
+  }
+  return null; // fall back to a PATH lookup of the engine command
+}
 
 function buildArgs(params: ScanParams): string[] {
   const { targets, targetType, mode, instructions } = params;
@@ -79,11 +90,14 @@ function runEngineOnce(
   logPath: string,
 ): Promise<number> {
   return new Promise(resolve => {
+    // The engine reads its model from an env var whose name is deployment-
+    // specific (see the internal runbook); default to a generic name.
+    const modelEnv = process.env.RS_ENGINE_MODEL_ENV || 'ENGINE_LLM';
     const env = {
       ...process.env,
-      STRIX_LLM: model,
+      [modelEnv]: model,
       LLM_API_KEY: resolveApiKey(),
-      PATH: `${ENGINE_HOME}:${process.env.PATH || ''}`,
+      PATH: ENGINE_HOME ? `${ENGINE_HOME}:${process.env.PATH || ''}` : process.env.PATH || '',
     };
 
     let child;
