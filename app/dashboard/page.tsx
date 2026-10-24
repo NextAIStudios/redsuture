@@ -164,21 +164,11 @@ const TARGET_TYPES: { id: ScanType; label: string; badge: string; desc: string; 
   { id: 'target-list', label: 'Many targets', badge: 'Bulk', desc: 'A list of sites, APIs or repos to test in one run.', icon: ListIcon },
 ];
 
-// The AI model that powers the RedSuture Agents. MiniMax is our house default —
-// top accuracy for a fraction of the cost; the rest are offered as options.
-const MODEL_OPTIONS = [
-  { value: 'minimax/minimax-m3.1-flash', label: 'MiniMax M3.1 Flash', desc: 'RedSuture house pick — top accuracy at a fraction of the cost', recommended: true },
-  { value: 'deepseek/deepseek-v4.1-flash', label: 'DeepSeek V4.1 Flash', desc: 'Highest benchmark accuracy, lowest cost', recommended: false },
-  { value: 'openrouter/z-ai/glm-5.3', label: 'GLM-5.3', desc: 'Strong open-weight model, great value', recommended: false },
-  { value: 'openai/gpt-5.6-sol', label: 'GPT-5.6 Sol', desc: 'OpenAI frontier reasoning', recommended: false },
-  { value: 'anthropic/claude-opus-5', label: 'Claude Opus 5', desc: "Anthropic's deepest code reasoning", recommended: false },
-  { value: 'gemini/gemini-4-argon', label: 'Gemini 4 Argon', desc: 'Google frontier multimodal', recommended: false },
-];
-
-const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string; recommended?: boolean }[] = [
-  { value: 'quick', label: 'Quick', time: '~5 min', desc: 'Checks the most common weak spots and logins', recommended: true },
-  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Thorough test of logins, data access and APIs' },
-  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Longest — links issues together to find the hardest bugs' },
+// Depth is the only scan option the client picks; deeper scans need a higher plan.
+const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string; recommended?: boolean; minTier: number; tier?: string }[] = [
+  { value: 'quick', label: 'Quick', time: '~5 min', desc: 'Checks the most common weak spots and logins', recommended: true, minTier: 0 },
+  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Thorough test of logins, data access and APIs', minTier: 1, tier: 'Starter' },
+  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Links issues together to find the hardest, multi-step bugs', minTier: 2, tier: 'Pro' },
 ];
 
 // Severity in plain words, shown in the findings help panel.
@@ -373,8 +363,8 @@ export default function DashboardPage() {
   const [authorized, setAuthorized] = useState(false);
   
   // Model & scan options
-  const [aiModel, setAiModel] = useState('minimax/minimax-m3.1-flash');
   const [scanMode, setScanMode] = useState<ScanMode>('quick');
+  const [notesOpen, setNotesOpen] = useState(false);
   const [schedule, setSchedule] = useState<ScheduleId>('manual');
   // Precise days the recurring scan runs: weekday indexes (0=Sun) for weekly,
   // day-of-month numbers for monthly. How many you may pick is plan-gated.
@@ -580,7 +570,7 @@ export default function DashboardPage() {
       progress: 3,
       messages: [
         `[orchestrator] Target: ${targets.join(', ')}`,
-        `[orchestrator] Scan mode: ${scanMode} · Model: ${aiModel}`,
+        `[orchestrator] RedSuture Agents · depth: ${scanMode}`,
         `[orchestrator] Starting engine — waiting for agents to come online…`,
       ],
       findings: 0,
@@ -600,7 +590,6 @@ export default function DashboardPage() {
           targets,
           targetType,
           mode: scanMode,
-          llm: aiModel,
           instructions: instructions || undefined,
           schedule,
           scheduleDays: schedule === 'monthly' ? scheduleDays : undefined,
@@ -1217,47 +1206,81 @@ export default function DashboardPage() {
                   <span className={styles.stepBadge}>4</span>
                   <div>
                     <h2 className={styles.formSectionTitle}>How thorough should it be?</h2>
-                    <p className={styles.formSectionDesc}>Your <strong>RedSuture Agents</strong> run the test. Choose which AI model powers them and how deep to go — the defaults work well for a first scan.</p>
+                    <p className={styles.formSectionDesc}>Your <strong>RedSuture Agents</strong> run every scan. Choose how deep to go — deeper scans are available on higher plans.</p>
                   </div>
                 </div>
 
-                <div className={styles.twoCol}>
+                <div className={styles.engineCard}>
+                  <span className={styles.engineCardIcon}><RadarIcon size={18} /></span>
+                  <div className={styles.engineCardBody}>
+                    <span className={styles.engineCardName}>
+                      RedSuture Agents <span className={styles.engineCardTag}>Your pentest engine</span>
+                    </span>
+                    <span className={styles.engineCardDesc}>Autonomous agents run the full penetration test — included on every plan.</span>
+                  </div>
+                  <CheckIcon size={18} className={styles.engineCardCheck} />
+                </div>
+
+                <div className={styles.depthBlock}>
+                  <span className={styles.inputLabel}>Depth <span className={styles.inputHint}>How long and how deep the scan goes</span></span>
+                  <div className={styles.scheduleGrid} role="radiogroup" aria-label="Scan depth">
+                    {DEPTH_OPTIONS.map(d => {
+                      const locked = planTier(profile?.plan) < d.minTier;
+                      const active = scanMode === d.value;
+                      return (
+                        <button
+                          key={d.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          disabled={locked}
+                          className={`${styles.scheduleOption} ${active ? styles.scheduleOptionActive : ''} ${locked ? styles.scheduleOptionLocked : ''}`}
+                          onClick={() => !locked && setScanMode(d.value)}
+                        >
+                          <span className={styles.scheduleTop}>
+                            <span className={styles.scheduleLabel}>{d.label}{d.recommended && !locked ? ' · Recommended' : ''}</span>
+                            {locked
+                              ? <span className={styles.scheduleLock}><LockIcon size={12} /> {d.tier}</span>
+                              : <span className={styles.depthTime}>{d.time}</span>}
+                          </span>
+                          <span className={styles.scheduleDesc}>{d.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(() => {
+                    const locked = DEPTH_OPTIONS.filter(d => planTier(profile?.plan) < d.minTier);
+                    if (locked.length === 0) return null;
+                    const names = locked.map(d => d.label);
+                    const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+                    return (
+                      <p className={styles.scheduleNote}>
+                        {list} {locked.length > 1 ? 'scans unlock' : 'scan unlocks'} on higher plans. <Link href="/dashboard/settings" className={styles.pickerUpgrade}>Upgrade your plan</Link>
+                      </p>
+                    );
+                  })()}
+                </div>
+
+                {notesOpen ? (
                   <div className={styles.field}>
-                    <label htmlFor="ai-model" className={styles.inputLabel}>
-                      AI model <span className={styles.inputHint}>Leave the default if unsure</span>
+                    <label htmlFor="instructions" className={styles.inputLabel}>
+                      Notes for the agents <span className={styles.inputHint}>Optional — areas to focus on or avoid</span>
                     </label>
-                    <select id="ai-model" className={styles.select} value={aiModel} onChange={e => setAiModel(e.target.value)}>
-                      {MODEL_OPTIONS.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}{m.recommended ? ' (recommended)' : ''} — {m.desc}</option>
-                      ))}
-                    </select>
+                    <textarea
+                      id="instructions"
+                      className={styles.textarea}
+                      rows={3}
+                      autoFocus
+                      placeholder="e.g. Focus on tenant isolation in /v2/orders, do not delete user accounts"
+                      value={instructions}
+                      onChange={e => setInstructions(e.target.value)}
+                    />
                   </div>
-
-                  <div className={styles.field}>
-                    <label htmlFor="scan-mode" className={styles.inputLabel}>
-                      Depth <span className={styles.inputHint}>How long and how deep</span>
-                    </label>
-                    <select id="scan-mode" className={styles.select} value={scanMode} onChange={e => setScanMode(e.target.value as ScanMode)}>
-                      {DEPTH_OPTIONS.map(d => (
-                        <option key={d.value} value={d.value}>{d.label} ({d.time}){d.recommended ? ' — best for a first scan' : ''} — {d.desc}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className={styles.field} style={{ marginTop: '16px' }}>
-                  <label htmlFor="instructions" className={styles.inputLabel}>
-                    Notes for the agents <span className={styles.inputHint}>Optional — areas to focus on or avoid</span>
-                  </label>
-                  <input
-                    id="instructions"
-                    type="text"
-                    className={styles.input}
-                    placeholder="e.g. Focus on tenant isolation in /v2/orders, do not delete user accounts"
-                    value={instructions}
-                    onChange={e => setInstructions(e.target.value)}
-                  />
-                </div>
+                ) : (
+                  <button type="button" className={styles.notesToggle} onClick={() => setNotesOpen(true)}>
+                    <PlusIcon size={14} /> Add notes for the agents <span>(optional)</span>
+                  </button>
+                )}
               </section>
 
               {liveScanCard}
