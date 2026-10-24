@@ -167,8 +167,8 @@ const TARGET_TYPES: { id: ScanType; label: string; badge: string; desc: string; 
 // Depth is the only scan option the client picks; deeper scans need a higher plan.
 const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string; recommended?: boolean; minTier: number; tier?: string }[] = [
   { value: 'quick', label: 'Quick', time: '~5 min', desc: 'Checks the most common weak spots and logins', recommended: true, minTier: 0 },
-  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Thorough test of logins, data access and APIs', minTier: 1, tier: 'Starter' },
-  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Links issues together to find the hardest, multi-step bugs', minTier: 2, tier: 'Pro' },
+  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Thorough test of logins, data access and APIs', minTier: 1, tier: 'Launch' },
+  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Links issues together to find the hardest, multi-step bugs', minTier: 2, tier: 'Team' },
 ];
 
 // Severity in plain words, shown in the findings help panel.
@@ -199,28 +199,31 @@ type ScheduleId = 'manual' | 'weekly' | 'monthly' | 'daily' | 'continuous';
 // 2 = Pro/Scale, 3 = Enterprise). The user's plan sets which are available.
 const SCHEDULES: { id: ScheduleId; label: string; desc: string; minTier: number; tier?: string }[] = [
   { id: 'manual', label: 'Run once', desc: 'A single scan, started now.', minTier: 0 },
-  { id: 'weekly', label: 'Weekly', desc: 'Re-scan this target every week.', minTier: 1 },
-  { id: 'monthly', label: 'Monthly', desc: 'Re-scan this target every month.', minTier: 1 },
-  { id: 'daily', label: 'Daily', desc: 'Re-scan every day for fast-moving apps.', minTier: 2, tier: 'Pro' },
-  { id: 'continuous', label: 'On every pull request', desc: 'Scan each PR before it merges.', minTier: 3, tier: 'Enterprise' },
+  { id: 'weekly', label: 'Weekly', desc: 'Re-scan this target every week.', minTier: 1, tier: 'Launch' },
+  { id: 'monthly', label: 'Monthly', desc: 'Re-scan this target every month.', minTier: 1, tier: 'Launch' },
+  { id: 'daily', label: 'Daily', desc: 'Re-scan every day for fast-moving apps.', minTier: 2, tier: 'Team' },
+  { id: 'continuous', label: 'On every pull request', desc: 'Scan each PR before it merges.', minTier: 3, tier: 'Scale' },
 ];
 
-// Map a plan name to a tier rank. Defaults to Pro-level for signed-up users.
+// The plan ladder, lowest to highest. A plan unlocks everything at or below its
+// tier: Starter(0) < Launch(1) < Team(2) < Scale(3) < Enterprise(4).
+const PLAN_LADDER = ['starter', 'launch', 'team', 'scale', 'enterprise'];
 function planTier(plan?: string): number {
   const p = (plan || '').toLowerCase();
-  if (p.includes('enterprise')) return 3;
-  if (p.includes('pro') || p.includes('scale') || p.includes('business')) return 2;
-  if (p.includes('team') || p.includes('starter')) return 1;
-  return 2;
+  const idx = PLAN_LADDER.findIndex(name => p.includes(name));
+  // Unknown or legacy names (e.g. a trial) map to the Team tier.
+  return idx === -1 ? 2 : idx;
 }
 
-// How many precise days a plan may pick for a recurring schedule.
-// Starter picks a single day; Pro gets fine control; Enterprise is unlimited.
+// How many precise days a plan may pick for a recurring schedule, rising with
+// the ladder: Starter 1 → Launch 3 → Team 8 → Scale 15 → Enterprise unlimited.
 function maxScheduleDays(plan?: string): number {
   const t = planTier(plan);
-  if (t >= 3) return Infinity;
-  if (t >= 2) return 8;
-  return 1;
+  if (t >= 4) return Infinity; // Enterprise
+  if (t >= 3) return 15;       // Scale
+  if (t >= 2) return 8;        // Team
+  if (t >= 1) return 3;        // Launch
+  return 1;                    // Starter
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -1047,7 +1050,7 @@ export default function DashboardPage() {
                   <div>
                     <h2 className={styles.formSectionTitle}>When should it run?</h2>
                     <p className={styles.formSectionDesc}>
-                      Run it once now, or repeat it on a schedule. Not sure? Choose <strong>Run once</strong>. Options depend on your {profile?.plan || 'Pro'} plan.
+                      Run it once now, or repeat it on a schedule. Not sure? Choose <strong>Run once</strong>. Options depend on your {profile?.plan || 'Team'} plan.
                     </p>
                   </div>
                 </div>
@@ -1090,7 +1093,7 @@ export default function DashboardPage() {
                           {schedule === 'weekly' ? 'Which days each week?' : 'Which days each month?'}
                         </span>
                         <span className={styles.pickerCap}>
-                          {profile?.plan || 'Pro'} plan · {capLabel}
+                          {profile?.plan || 'Team'} plan · {capLabel}
                           {maxDays !== Infinity && (
                             <Link href="/dashboard/settings" className={styles.pickerUpgrade}>Upgrade for more</Link>
                           )}

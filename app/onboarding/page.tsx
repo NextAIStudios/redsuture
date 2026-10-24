@@ -48,7 +48,7 @@ export default function OnboardingPage() {
       company: company.trim(),
       website: normalizeWebsite(website),
       orgId: generateOrgId(),
-      plan: 'Pro',
+      plan: 'Team',
       role: 'admin',
       twoFactor: false,
       createdAt: new Date().toISOString(),

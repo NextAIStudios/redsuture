@@ -607,7 +607,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               ))}
             </ol>
             <div className={styles.modelStrip} data-reveal>
-              <span className={styles.modelStripLabel}>Runs on your choice of model</span>
+              <span className={styles.modelStripLabel}>Powered by</span>
               <ul className={styles.modelChips}>
                 {MODELS.map((m, i) => (
                   <li key={m} className={`${styles.modelChip} ${i === 0 ? styles.modelChipLead : ''}`}>

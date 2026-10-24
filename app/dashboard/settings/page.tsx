@@ -34,7 +34,7 @@ const FALLBACK: Profile = {
   company: '',
   website: '',
   orgId: 'org_pending',
-  plan: 'Pro',
+  plan: 'Team',
   role: 'admin',
   twoFactor: false,
   createdAt: new Date().toISOString(),
