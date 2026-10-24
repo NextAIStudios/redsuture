@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './auth.module.css';
 import Logo from '../components/Logo';
+import Suture from '../components/Suture';
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '../components/icons';
 import { saveSignupDraft, setAuthed } from '../lib/profile';
 
@@ -186,7 +187,8 @@ export default function AuthPage() {
       <aside className={styles.brandPanel} aria-hidden="true">
         <div className={styles.brandInner}>
           <p className={styles.brandEyebrow}>Autonomous offense. Instant closure.</p>
-          <h2 className={styles.brandTitle}>Find what an attacker would — and ship the fix the same day.</h2>
+          <h2 className={styles.brandTitle}>Find what an attacker would — and <em>ship the fix</em> the same day.</h2>
+          <Suture className={styles.brandSuture} stitches={6} />
 
           <div className={styles.preview}>
             <div className={styles.previewHead}>

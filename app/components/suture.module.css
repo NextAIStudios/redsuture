@@ -1,0 +1,56 @@
+.suture {
+  display: block;
+  overflow: visible;
+}
+
+.thread {
+  fill: none;
+  stroke: #ff5148;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 6px rgba(255, 81, 72, 0.55));
+}
+
+.stitch {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.stitch line {
+  stroke: #f4efea;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes stitchIn {
+  from { opacity: 0; transform: scale(0.3) rotate(-30deg); }
+  to { opacity: 0.9; transform: none; }
+}
+
+.suture[data-drawn] .thread {
+  animation: draw 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s forwards;
+}
+
+.suture[data-drawn] .stitch {
+  animation: stitchIn 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: calc(0.75s + var(--i) * 0.11s);
+}
+
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  .thread {
+    stroke-dashoffset: 0;
+    animation: none !important;
+  }
+
+  .stitch {
+    opacity: 0.9;
+    animation: none !important;
+  }
+}

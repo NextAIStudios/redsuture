@@ -2,18 +2,18 @@
 
 /* Dark docs layout, matching the app theme. */
 .page {
-  --d-bg: #09090b;
-  --d-surface: #111113;
+  --d-bg: #0b0a0a;
+  --d-surface: #131111;
   --d-surface-2: #16161a;
   --d-border: rgba(255, 255, 255, 0.08);
   --d-border-strong: rgba(255, 255, 255, 0.14);
-  --d-text: #fafafa;
-  --d-text-2: #a1a1aa;
-  --d-text-3: #71717a;
+  --d-text: #f4efea;
+  --d-text-2: #a8a29e;
+  --d-text-3: #78716c;
   --d-accent: #f04b4e;
   --d-accent-soft: rgba(229, 56, 59, 0.12);
   --d-accent-border: rgba(229, 56, 59, 0.4);
-  --d-code-bg: #0a0a0c;
+  --d-code-bg: #0c0a0a;
   --d-code-text: #e4e4e7;
   --d-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
 
@@ -35,7 +35,7 @@
   gap: 24px;
   height: 60px;
   padding: 0 24px;
-  background: rgba(9, 9, 11, 0.8);
+  background: rgba(11, 10, 10, 0.8);
   backdrop-filter: saturate(180%) blur(12px);
   -webkit-backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--d-border);

@@ -45,7 +45,7 @@
   flex-direction: column;
   height: 100vh;
   border-right: 1px solid var(--border);
-  background: #0c0c0e;
+  background: #0e0c0c;
   overflow: hidden;
 }
 
@@ -278,7 +278,7 @@
   min-height: 64px;
   padding: 10px 32px;
   border-bottom: 1px solid var(--border);
-  background: rgba(9, 9, 11, 0.85);
+  background: rgba(11, 10, 10, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -295,11 +295,11 @@
 }
 
 .pageTitle {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
 }
 
 .pageSub {
@@ -394,7 +394,7 @@
 .sev_critical { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
 .sev_high { background: rgba(249, 115, 22, 0.14); color: #fdba74; }
 .sev_medium { background: rgba(234, 179, 8, 0.12); color: #fde047; }
-.sev_low { background: rgba(161, 161, 170, 0.12); color: #d4d4d8; }
+.sev_low { background: rgba(161, 161, 170, 0.12); color: #d6d3d1; }
 
 .scoreBad { color: #f87171; }
 .scoreWarn { color: #fb923c; }
@@ -432,12 +432,15 @@
 }
 
 /* Mono uppercase meta label, ClickUp-style. */
+/* Wraps rather than truncates on narrow cards — a label is never cut off. */
 .statLabel {
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
+  line-height: 1.4;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
 }
 
@@ -455,11 +458,11 @@
 .tone_good { background: rgba(52, 211, 153, 0.12); color: var(--green); }
 
 .statValue {
-  margin-top: 12px;
-  font-family: var(--font-display);
-  font-size: 2.375rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  margin-top: 14px;
+  font-family: var(--font-serif);
+  font-size: 2.875rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -547,7 +550,7 @@
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0a0a0c;
+  background: #0c0a0a;
   font-family: var(--font-mono);
   font-size: 0.75rem;
   line-height: 1.7;
@@ -702,10 +705,11 @@
 }
 
 .formSectionTitle {
-  font-family: var(--font-display);
-  font-size: 1.125rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: var(--font-serif);
+  font-size: 1.625rem;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
 }
 
 .formSectionDesc {
@@ -839,7 +843,7 @@
   padding: 0 14px;
   border: 1px solid var(--border-bright);
   border-radius: 10px;
-  background: #0c0c0e;
+  background: #0e0c0c;
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
@@ -1175,7 +1179,7 @@
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #0c0c0e;
+  background: #0e0c0c;
 }
 
 .downloadBarTitle {
@@ -1249,7 +1253,7 @@
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0a0a0c;
+  background: #0c0a0a;
   font-family: var(--font-mono);
   font-size: 0.75rem;
   line-height: 1.7;
@@ -1276,7 +1280,7 @@
 .diffHunk { color: #a5b4fc; background: rgba(139, 139, 245, 0.06); }
 .diffAdd { color: #86efac; background: rgba(52, 211, 153, 0.07); }
 .diffDel { color: #fca5a5; background: rgba(239, 68, 68, 0.08); }
-.diffCtx { color: #a1a1aa; }
+.diffCtx { color: #a8a29e; }
 
 .fixSteps {
   display: flex;
@@ -1541,7 +1545,7 @@
   padding: 0 38px 0 14px;
   border: 1px solid var(--border-bright);
   border-radius: 10px;
-  background-color: #0c0c0e;
+  background-color: #0e0c0c;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -1602,7 +1606,7 @@
   margin: 14px 20px 0;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #0a0a0c;
+  background: #0c0a0a;
   overflow: hidden;
 }
 

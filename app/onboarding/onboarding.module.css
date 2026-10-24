@@ -36,8 +36,8 @@
   max-width: 460px;
   padding: 32px;
   border: 1px solid var(--border-bright);
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--bg-surface), #0d0d0f);
+  border-radius: 28px;
+  background: linear-gradient(180deg, var(--bg-surface), #0f0d0d);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8);
 }
 
@@ -49,7 +49,10 @@
 }
 
 .step {
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--text-muted);
   padding: 4px 10px;
   border: 1px solid var(--border);
@@ -57,10 +60,17 @@
 }
 
 .title {
-  font-size: 1.625rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  margin-bottom: 8px;
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.title em {
+  font-style: italic;
+  color: #ff5148;
 }
 
 .subtitle {
@@ -155,7 +165,7 @@
   height: 44px;
   padding: 0 14px;
   border: 1px solid var(--border-bright);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--bg-surface);
   color: var(--text-primary);
   font: inherit;

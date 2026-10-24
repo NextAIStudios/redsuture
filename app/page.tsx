@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 import Logo from './components/Logo';
+import Suture from './components/Suture';
 import {
   ShieldIcon, CodeIcon, GitIcon, GaugeIcon, FileCheckIcon, GlobeIcon, LayersIcon,
   FolderIcon, ApiIcon, ListIcon, CheckIcon, ArrowRightIcon, PlusIcon, DownloadIcon,
@@ -26,6 +27,43 @@ function useLaunchScan() {
     }
     router.push(authed ? '/dashboard' : '/auth?mode=signup');
   };
+}
+
+// Fade blocks up as they scroll into view. Writes a data attribute straight to
+// the DOM (no React state); a timeout reveals anything the observer missed.
+function useReveal(root: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const nodes = Array.from(root.current?.querySelectorAll<HTMLElement>('[data-reveal]') ?? []);
+    const show = (el: Element) => el.setAttribute('data-in', '');
+    if (!('IntersectionObserver' in window)) {
+      nodes.forEach(show);
+      return;
+    }
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) {
+          show(e.target);
+          io.unobserve(e.target);
+        }
+      }),
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+    );
+    nodes.forEach(n => io.observe(n));
+    const failsafe = window.setTimeout(() => nodes.forEach(show), 4000);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(failsafe);
+    };
+  }, [root]);
+}
+
+// Track the cursor inside [data-spot] cards for the spotlight glow.
+function onSpotlight(e: React.MouseEvent<HTMLElement>) {
+  const card = (e.target as HTMLElement).closest<HTMLElement>('[data-spot]');
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+  card.style.setProperty('--my', `${e.clientY - r.top}px`);
 }
 
 const NAV_LINKS = [
@@ -321,7 +359,7 @@ const FAQS = [
   },
   {
     q: 'Which AI reasoning models power the RedSuture platform?',
-    a: 'RedSuture orchestrates state-of-the-art reasoning models from Anthropic (Claude 3.5 Sonnet / Opus) and OpenAI (GPT-5.4, o3, o4-mini) across AST taint analysis, attack tree exploration, and surgical patch synthesis. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
+    a: 'RedSuture orchestrates state-of-the-art reasoning models from Anthropic (Claude Sonnet / Opus) and OpenAI (GPT-5.4, o3, o4-mini) across AST taint analysis, attack tree exploration, and surgical patch synthesis. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
   },
   {
     q: 'Is it safe to run scans against production infrastructure?',
@@ -339,7 +377,7 @@ const FAQS = [
 
 function SectionHeader({ eyebrow, title, sub, center = false }: { eyebrow: string; title: string; sub?: string; center?: boolean }) {
   return (
-    <div className={`${styles.sectionHeader} ${center ? styles.sectionHeaderCenter : ''}`}>
+    <div className={`${styles.sectionHeader} ${center ? styles.sectionHeaderCenter : ''}`} data-reveal>
       <span className={styles.eyebrow}>{eyebrow}</span>
       <h2 className={styles.sectionTitle}>{title}</h2>
       {sub && <p className={styles.sectionSub}>{sub}</p>}
@@ -378,8 +416,10 @@ function Faq() {
 
 export default function LandingPage() {
   const launchScan = useLaunchScan();
+  const pageRef = useRef<HTMLDivElement>(null);
+  useReveal(pageRef);
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={pageRef}>
       <NavBar />
 
       <main>
@@ -395,7 +435,10 @@ export default function LandingPage() {
               </a>
               <h1 className={styles.heroTitle}>
                 Autonomous offense.
-                <span className={styles.heroTitleAccent}>Instant closure.</span>
+                <span className={styles.heroTitleAccent}>
+                  <em>Instant closure.</em>
+                  <Suture className={styles.heroSuture} stitches={7} />
+                </span>
               </h1>
               <p className={styles.heroSub}>
                 Autonomous AI agents probe your apps, APIs, and repos for deep logic flaws — prove every one in a sandbox, and hand you the patch.
@@ -466,7 +509,7 @@ export default function LandingPage() {
               title="From scope configuration to verified patch in minutes."
               sub="Traditional penetration tests take weeks to schedule and yield static PDFs. RedSuture executes autonomously whenever you ship and delivers surgical fixes your team can apply immediately."
             />
-            <ol className={styles.steps}>
+            <ol className={styles.steps} data-reveal>
               {STEPS.map((s, i) => (
                 <li key={s.title} className={styles.step}>
                   <span className={styles.stepNum}>{String(i + 1).padStart(2, '0')}</span>
@@ -486,8 +529,8 @@ export default function LandingPage() {
               title="Findings you can verify. Fixes you can apply."
               sub="Every result is backed by sandboxed evidence and paired with surgical code patches written specifically for your stack."
             />
-            <div className={styles.bento}>
-              <article className={`${styles.card} ${styles.cardWide}`}>
+            <div className={styles.bento} onMouseMove={onSpotlight} data-reveal>
+              <article data-spot className={`${styles.card} ${styles.cardWide}`}>
                 <div className={styles.cardIcon}><ShieldIcon /></div>
                 <h3 className={styles.cardTitle}>Reproduced evidence, zero noise</h3>
                 <p className={styles.cardDesc}>
@@ -509,7 +552,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                 </div>
               </article>
 
-              <article className={styles.card}>
+              <article data-spot className={styles.card}>
                 <div className={styles.cardIcon}><CodeIcon /></div>
                 <h3 className={styles.cardTitle}>Surgical code patches</h3>
                 <p className={styles.cardDesc}>SutureEngine synthesizes typed, framework-specific diffs that resolve the root cause without side effects.</p>
@@ -522,19 +565,19 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                 </pre>
               </article>
 
-              <article className={styles.card}>
+              <article data-spot className={styles.card}>
                 <div className={styles.cardIcon}><FileCheckIcon /></div>
                 <h3 className={styles.cardTitle}>Downloadable remediation</h3>
                 <p className={styles.cardDesc}>Download .patch diffs, step-by-step Markdown guides, executive PDF reports, and SARIF v2.1.0 files directly from your dashboard.</p>
               </article>
 
-              <article className={styles.card}>
+              <article data-spot className={styles.card}>
                 <div className={styles.cardIcon}><GaugeIcon /></div>
                 <h3 className={styles.cardTitle}>Safe by design</h3>
                 <p className={styles.cardDesc}>Non-destructive payloads, adaptive rate limiting, and strict scope allowlists prevent disruption to production services.</p>
               </article>
 
-              <article className={styles.card}>
+              <article data-spot className={styles.card}>
                 <div className={styles.cardIcon}><GitIcon /></div>
                 <h3 className={styles.cardTitle}>Enterprise integrations</h3>
                 <p className={styles.cardDesc}>Integrate findings seamlessly into GitHub code scanning, Jira issue tracking, SIEM platforms, and CI/CD pipelines.</p>
@@ -551,7 +594,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               title="A coordinated red team of specialized AI agents."
               sub="Powered by frontier reasoning models from Anthropic and OpenAI, RedSuture’s agent pipeline traces authentication flows, business logic, and multi-step attack chains that signature tools fail to detect."
             />
-            <ol className={styles.pipeline}>
+            <ol className={styles.pipeline} data-reveal>
               {AGENTS.map((a, i) => (
                 <li key={a.name} className={`${styles.agent} ${i === AGENTS.length - 1 ? styles.agentFinal : ''}`}>
                   <span className={styles.agentIndex}>Agent {String(i + 1).padStart(2, '0')}</span>
@@ -571,7 +614,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               title="Test the digital surfaces your organization relies on."
               sub="Select any combination of targets. Autonomous agents adapt their reconnaissance and offensive techniques to each architecture."
             />
-            <div className={styles.targets}>
+            <div className={styles.targets} data-reveal>
               {TARGETS.map(t => (
                 <div key={t.title} className={styles.target}>
                   <div className={styles.targetIcon}>{t.icon}</div>
@@ -588,7 +631,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
         {/* Deliverables */}
         <section id="deliverables" className={styles.section}>
           <div className="container">
-            <div className={styles.split}>
+            <div className={styles.split} data-reveal>
               <div>
                 <SectionHeader
                   eyebrow="Remediation deliverables"
@@ -646,7 +689,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               title="Transparent, predictable pricing."
               sub="Continuous autonomous security testing at a fraction of traditional consultancy retainers."
             />
-            <div className={styles.pricing}>
+            <div className={styles.pricing} data-reveal>
               {PLANS.map(plan => (
                 <div key={plan.name} className={`${styles.plan} ${plan.popular ? styles.planPopular : ''}`}>
                   <div className={styles.planHead}>
@@ -692,8 +735,9 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
         {/* CTA */}
         <section className={styles.cta}>
           <div className="container">
-            <div className={styles.ctaBox}>
-              <h2 className={styles.ctaTitle}>Discover what an attacker would exploit — before they do.</h2>
+            <div className={styles.ctaBox} data-reveal>
+              <h2 className={styles.ctaTitle}>Find it before <em>they</em> do.</h2>
+              <Suture className={styles.ctaSuture} stitches={11} />
               <p className={styles.ctaSub}>Launch your first autonomous scan in seconds. Get verified proof of concepts and downloadable code patches immediately.</p>
               <div className={styles.ctaActions}>
                 <button type="button" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`} onClick={launchScan}>
@@ -739,6 +783,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               </div>
             </div>
           </div>
+          <div className={styles.wordmark} aria-hidden="true">RedSuture</div>
           <div className={styles.footerBottom}>
             <p>&copy; {new Date().getFullYear()} NextAI Studios. All rights reserved.</p>
             <p>For authorized security testing only. Scan only assets within your legal authorization.</p>

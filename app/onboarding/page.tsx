@@ -71,7 +71,7 @@ export default function OnboardingPage() {
           <span className={styles.step}>Step 1 of 1</span>
         </header>
 
-        <h1 className={styles.title}>Set up your workspace</h1>
+        <h1 className={styles.title}>Set up your <em>workspace</em></h1>
         <p className={styles.subtitle}>
           Tell us about your organization. We&apos;ll create your account and take you to the dashboard.
         </p>
