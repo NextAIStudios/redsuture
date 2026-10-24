@@ -170,6 +170,9 @@ function HeroReport() {
 
 const STANDARDS = ['SOC 2 Type II', 'ISO/IEC 27001', 'PCI DSS v4.0', 'HIPAA', 'OWASP Top 10', 'NIST CSF 2.0'];
 
+// Target types shown as pill chips under the hero CTA.
+const HERO_TARGETS = ['Web apps', 'REST & GraphQL APIs', 'Git repositories', 'Local code', 'White-box hybrid', 'Target lists'];
+
 const THREAT_VECTORS = [
   'Broken Object Level Auth (BOLA)',
   'SQL & NoSQL Query Injection',
@@ -395,8 +398,13 @@ export default function LandingPage() {
                 <span className={styles.heroTitleAccent}>Instant closure.</span>
               </h1>
               <p className={styles.heroSub}>
-                RedSuture deploys autonomous AI reasoning agents that probe your web applications, APIs, and repositories for deep logic flaws — proving each vulnerability in an isolated sandbox and delivering downloadable, ready-to-apply surgical code patches.
+                Autonomous AI agents probe your apps, APIs, and repos for deep logic flaws — prove every one in a sandbox, and hand you the patch.
               </p>
+              <ul className={styles.heroPoints}>
+                <li><CheckIcon /> <span><strong>Prove it.</strong> A working proof of concept for every finding.</span></li>
+                <li><CheckIcon /> <span><strong>Stay safe.</strong> Non-destructive payloads in an isolated sandbox.</span></li>
+                <li><CheckIcon /> <span><strong>Ship the fix.</strong> Ready-to-apply patches and step-by-step guides.</span></li>
+              </ul>
               <div className={styles.heroActions}>
                 <button type="button" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`} onClick={launchScan}>
                   Launch a scan <ArrowRightIcon />
@@ -405,10 +413,13 @@ export default function LandingPage() {
                   View sample fixes
                 </a>
               </div>
-              <ul className={styles.heroPoints}>
-                <li><CheckIcon /> Proof of concept for every finding</li>
-                <li><CheckIcon /> Non-destructive safe payloads</li>
-                <li><CheckIcon /> Downloadable code patches &amp; guides</li>
+              <p className={styles.heroChipsLabel}>Test everything you ship <span aria-hidden="true">•</span> Pick a target</p>
+              <ul className={styles.heroChips}>
+                {HERO_TARGETS.map((t, i) => (
+                  <li key={t}>
+                    <a href="#coverage" className={`${styles.heroChip} ${i === 0 ? styles.heroChipActive : ''}`}>{t}</a>
+                  </li>
+                ))}
               </ul>
             </div>
             <div className={styles.heroVisual}>
@@ -420,7 +431,7 @@ export default function LandingPage() {
         {/* Standards Banner */}
         <section id="compliance" className={styles.standards} aria-label="Compliance frameworks">
           <div className="container">
-            <p className={styles.standardsLabel}>Audit-ready reports mapped to leading security frameworks</p>
+            <p className={styles.standardsLabel}>Audit-ready reports for</p>
             <ul className={styles.standardsList}>
               {STANDARDS.map(s => <li key={s}>{s}</li>)}
             </ul>

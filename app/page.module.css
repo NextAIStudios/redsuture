@@ -15,7 +15,9 @@
   --l-red-soft: rgba(229, 56, 59, 0.12);
   --l-green: #34d399;
   --l-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --l-radius: 12px;
+  --l-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --l-radius: 20px;
+  --l-pill: 9999px;
 
   position: relative;
   min-height: 100vh;
@@ -25,12 +27,14 @@
   font-feature-settings: 'cv11', 'ss01';
 }
 
+/* Display type — Plus Jakarta Sans, heavy weight, tight tracking (ClickUp-style). */
 .page h1,
 .page h2,
 .page h3,
 .page h4 {
-  font-family: 'Inter', system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: var(--l-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .page :focus-visible {
@@ -46,22 +50,23 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 36px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--l-pill);
   background: none;
   font-family: inherit;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .btnLg {
-  height: 44px;
-  padding: 0 20px;
+  height: 46px;
+  padding: 0 24px;
   font-size: 0.9375rem;
 }
 
@@ -72,10 +77,11 @@
 .btnPrimary {
   background: var(--l-red);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 .btnPrimary:hover {
   background: var(--l-red-hover);
+  transform: translateY(-1px);
 }
 
 .btnSecondary {
@@ -118,17 +124,21 @@
 
 .navLinks {
   display: flex;
-  gap: 28px;
+  gap: 4px;
   flex: 1;
 }
 
 .navLinks a {
+  padding: 7px 12px;
+  border-radius: var(--l-pill);
   font-size: 0.875rem;
+  font-weight: 500;
   color: var(--l-text-2);
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 .navLinks a:hover {
   color: var(--l-text);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .navActions {
@@ -180,35 +190,22 @@
 
 .hero {
   position: relative;
-  padding: 152px 0 96px;
+  padding: 168px 0 104px;
   overflow: hidden;
 }
 
+/* Flat canvas: one soft glow behind the product panel, no grid texture. */
 .heroBackdrop {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(60% 50% at 70% 0%, rgba(229, 56, 59, 0.16), transparent 70%),
-    radial-gradient(40% 40% at 10% 10%, rgba(229, 56, 59, 0.06), transparent 70%);
-}
-
-.heroBackdrop::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+  background: radial-gradient(45% 55% at 78% 38%, rgba(229, 56, 59, 0.11), transparent 70%);
 }
 
 .heroInner {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 56px;
   align-items: center;
 }
@@ -241,10 +238,13 @@
 }
 
 .heroTitle {
-  font-size: clamp(2.5rem, 4.4vw, 3.5rem);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.035em !important;
+  font-family: var(--l-display);
+  /* Sized to the copy column so each phrase sets on one line ("Autonomous
+     offense." is ~9.9em wide) — two bold lines, never four. */
+  font-size: clamp(2.75rem, 4.6vw, 3.75rem);
+  font-weight: 800 !important;
+  line-height: 1;
+  letter-spacing: -0.04em !important;
   margin-bottom: 24px;
 }
 
@@ -257,37 +257,95 @@
 }
 
 .heroSub {
-  max-width: 520px;
-  font-size: 1.125rem;
-  line-height: 1.65;
+  max-width: 500px;
+  font-size: 1.1875rem;
+  line-height: 1.55;
   color: var(--l-text-2);
-  margin-bottom: 36px;
+  margin-bottom: 28px;
 }
 
 .heroActions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 36px;
+  margin-bottom: 44px;
 }
 
+/* Stacked checks with a bold lead phrase — ClickUp's spec-sheet bullets. */
 .heroPoints {
   list-style: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 24px;
-  font-size: 0.875rem;
-  color: var(--l-text-2);
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 32px;
+  font-size: 0.9375rem;
+  color: var(--l-text-3);
 }
 
 .heroPoints li {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.heroPoints strong {
+  color: var(--l-text);
+  font-weight: 600;
 }
 
 .heroPoints svg {
-  color: var(--l-green);
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--l-red);
+}
+
+.heroChipsLabel {
+  margin-bottom: 12px;
+  font-family: var(--l-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--l-text-3);
+}
+
+.heroChipsLabel span {
+  margin: 0 6px;
+  color: var(--l-red);
+}
+
+.heroChips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.heroChip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--l-border-strong);
+  border-radius: var(--l-pill);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--l-text-2);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.heroChip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--l-text);
+}
+
+.heroChipActive,
+.heroChipActive:hover {
+  border-color: rgba(229, 56, 59, 0.55);
+  background: var(--l-red-soft);
+  color: #fecaca;
 }
 
 .heroVisual {
@@ -303,16 +361,33 @@
   z-index: -1;
 }
 
+/* The one expressive moment: a rotating conic border framing the hero window. */
+.heroVisual::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(229, 56, 59, 0.05) 40deg,
+    var(--l-red) 90deg,
+    #f87171 120deg,
+    #b91c1c 160deg,
+    transparent 210deg,
+    transparent 360deg
+  );
+  animation: spin 6s linear infinite;
+  z-index: -1;
+}
+
 /* ─── Window chrome (shared by hero + diff) ───────────────── */
 
 .window {
   border: 1px solid var(--l-border-strong);
-  border-radius: 14px;
+  border-radius: 16px;
   background: linear-gradient(180deg, #141417, #0e0e10);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 30px 80px -20px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.75);
   overflow: hidden;
 }
 
@@ -353,8 +428,8 @@
   font-family: var(--l-mono);
   font-size: 0.6875rem;
   color: #fca5a5;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 2px 10px;
+  border-radius: var(--l-pill);
   background: var(--l-red-soft);
   white-space: nowrap;
 }
@@ -512,7 +587,7 @@
   display: inline-flex;
   justify-content: center;
   padding: 3px 0;
-  border-radius: 6px;
+  border-radius: var(--l-pill);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -551,24 +626,21 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--l-pill);
   background: var(--l-red);
   color: #fff;
   font-family: inherit;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
 /* ─── Standards strip ──────────────────────────────────────── */
 
 .standards {
-  padding: 36px 0;
-  border-top: 1px solid var(--l-border);
-  border-bottom: 1px solid var(--l-border);
-  background: var(--l-bg-alt);
+  padding: 32px 0 40px;
 }
 
 .standards :global(.container) {
@@ -580,8 +652,11 @@
 .standardsLabel {
   flex-shrink: 0;
   max-width: 220px;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  font-family: var(--l-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--l-text-3);
 }
 
@@ -623,10 +698,11 @@
   font-family: var(--l-mono);
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: #fca5a5;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 4px 12px;
+  border-radius: var(--l-pill);
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.25);
   white-space: nowrap;
@@ -669,8 +745,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
-  border-radius: 8px;
+  padding: 7px 16px;
+  border-radius: var(--l-pill);
   border: 1px solid var(--l-border);
   background: rgba(255, 255, 255, 0.025);
   white-space: nowrap;
@@ -706,10 +782,12 @@
   scroll-margin-top: 40px;
 }
 
+/* Alternate sections float as large rounded panels inset from the edges. */
 .sectionAlt {
-  background: var(--l-bg-alt);
-  border-top: 1px solid var(--l-border);
-  border-bottom: 1px solid var(--l-border);
+  margin-inline: clamp(8px, 2.5vw, 32px);
+  border: 1px solid var(--l-border);
+  border-radius: 32px;
+  background: #0f0f12;
 }
 
 .sectionHeader {
@@ -723,19 +801,38 @@
   text-align: center;
 }
 
+/* Eyebrow as a pill badge with a mono uppercase label. */
 .eyebrow {
-  display: inline-block;
-  margin-bottom: 14px;
-  font-size: 0.8125rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 5px 12px;
+  border: 1px solid rgba(229, 56, 59, 0.35);
+  border-radius: var(--l-pill);
+  background: var(--l-red-soft);
+  font-family: var(--l-mono);
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--l-red);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #fca5a5;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--l-red);
 }
 
 .sectionTitle {
-  font-size: clamp(1.875rem, 3.4vw, 2.625rem);
-  font-weight: 600;
-  line-height: 1.12;
-  letter-spacing: -0.03em !important;
+  font-family: var(--l-display);
+  font-size: clamp(2.25rem, 4.4vw, 3.5rem);
+  font-weight: 800 !important;
+  line-height: 1.04;
+  letter-spacing: -0.04em !important;
   margin-bottom: 16px;
 }
 
@@ -809,15 +906,16 @@
 .card {
   display: flex;
   flex-direction: column;
-  padding: 28px;
+  padding: 32px;
   border: 1px solid var(--l-border);
-  border-radius: var(--l-radius);
-  background: linear-gradient(180deg, var(--l-surface), #0d0d0f);
-  transition: border-color 0.2s ease;
+  border-radius: 20px;
+  background: var(--l-surface-2);
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
   border-color: var(--l-border-strong);
+  transform: translateY(-2px);
 }
 
 .cardWide {
@@ -827,18 +925,20 @@
 .cardIcon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 20px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 22px;
+  border-radius: var(--l-pill);
   border: 1px solid var(--l-border-strong);
   background: rgba(255, 255, 255, 0.03);
   color: #f87171;
 }
 
 .cardTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-family: var(--l-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin-bottom: 8px;
 }
 
@@ -1080,8 +1180,8 @@
 .formatExt {
   align-self: start;
   justify-self: start;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: var(--l-pill);
   background: var(--l-red-soft);
   color: #fca5a5;
   font-family: var(--l-mono);
@@ -1114,14 +1214,14 @@
   flex-direction: column;
   padding: 24px;
   border: 1px solid var(--l-border);
-  border-radius: 16px;
+  border-radius: 20px;
   background: var(--l-surface);
 }
 
 .planPopular {
   border-color: rgba(229, 56, 59, 0.5);
   background: linear-gradient(180deg, rgba(229, 56, 59, 0.08), var(--l-surface) 40%);
-  box-shadow: 0 0 0 1px rgba(229, 56, 59, 0.15), 0 24px 60px -24px rgba(229, 56, 59, 0.35);
+  box-shadow: 0 0 0 1px rgba(229, 56, 59, 0.18);
 }
 
 .planHead {
@@ -1161,8 +1261,9 @@
 }
 
 .planAmount {
+  font-family: var(--l-display);
   font-size: 2.75rem;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1;
 }
@@ -1281,9 +1382,9 @@
 
 .ctaBox {
   position: relative;
-  padding: 80px 40px;
+  padding: 88px 40px;
   border: 1px solid var(--l-border-strong);
-  border-radius: 20px;
+  border-radius: 32px;
   text-align: center;
   overflow: hidden;
   background:
@@ -1308,10 +1409,11 @@
   position: relative;
   max-width: 680px;
   margin: 0 auto 16px;
-  font-size: clamp(1.875rem, 3.6vw, 2.75rem);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.03em !important;
+  font-family: var(--l-display);
+  font-size: clamp(2rem, 3.8vw, 3rem);
+  font-weight: 800 !important;
+  line-height: 1.04;
+  letter-spacing: -0.04em !important;
 }
 
 .ctaSub {
@@ -1622,6 +1724,7 @@
   .page *::before,
   .page *::after {
     transition: none !important;
+    animation: none !important;
   }
 }
 
