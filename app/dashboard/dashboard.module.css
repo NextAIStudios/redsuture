@@ -1470,9 +1470,18 @@
     cursor: pointer;
   }
 
+  .mobileTab {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .mobileTabActive {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(229, 56, 59, 0.12);
     color: var(--text-primary);
+  }
+
+  .topBtnText {
+    display: none;
   }
 
   .content {
@@ -1580,12 +1589,6 @@
 
 .startScanBtn {
   width: 100%;
-}
-
-.formActions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 4px;
 }
 
 .launchBtn {
@@ -2051,4 +2054,376 @@
   margin-top: 14px;
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+/* ─── First-run clarity: nav hints, guide, sample labels, help ─ */
+
+.navGroup {
+  display: block;
+  margin: 14px 0 4px;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.navGroup:first-child {
+  margin-top: 2px;
+}
+
+.navItemTall {
+  height: auto;
+  min-height: 46px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  border-radius: 14px;
+}
+
+.navText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.navHint {
+  font-size: 0.71875rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navItemActive .navHint {
+  color: var(--text-secondary);
+}
+
+/* Getting-started checklist */
+.guide {
+  padding: 26px 28px;
+  border: 1px solid rgba(229, 56, 59, 0.3);
+  border-radius: 22px;
+  background:
+    radial-gradient(60% 120% at 100% 0%, rgba(255, 81, 72, 0.1), transparent 70%),
+    var(--bg-surface);
+}
+
+.guideHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.guideEyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #ff5148;
+}
+
+.guideTitle {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.guideBar {
+  height: 4px;
+  margin: 18px 0 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(244, 239, 234, 0.08);
+  overflow: hidden;
+}
+
+.guideBar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff5148;
+  transition: width 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.guideSteps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.guideStep {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.guideStep:first-child {
+  border-top: none;
+}
+
+.guideCheck {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-bright);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.guideStepDone .guideCheck {
+  border-color: transparent;
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--green);
+}
+
+.guideStepBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.guideStepTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.guideStepDone .guideStepTitle {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: rgba(244, 239, 234, 0.25);
+}
+
+.guideStepDesc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.guideAction {
+  flex-shrink: 0;
+}
+
+/* Honest labelling of demo data */
+.sampleNote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px dashed var(--border-bright);
+  border-radius: 14px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.samplePill {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  border-radius: var(--radius-pill);
+  background: rgba(234, 179, 8, 0.1);
+  color: #fde047;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+}
+
+.sampleNote .samplePill,
+.samplePillLead {
+  margin-left: 0;
+}
+
+.samplePillLead {
+  margin-right: 8px;
+}
+
+/* "How to read this page" panel */
+.helpBox {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-surface);
+}
+
+.helpBox summary {
+  padding: 15px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.helpBox summary:hover {
+  color: #ff5148;
+}
+
+.helpGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  padding: 4px 20px 0;
+}
+
+.helpTitle {
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.helpList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.helpList li {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.helpTerms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.helpTerms dt {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.helpTerms dd {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.helpFoot {
+  margin: 18px 20px 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.thHint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+/* Launch: permission check + plain summary of what will run */
+.launchPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid var(--border-bright);
+  border-radius: 20px;
+  background: var(--bg-surface);
+}
+
+.authCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.authCheck input {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: var(--red-primary);
+  cursor: pointer;
+}
+
+.launchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.launchSummary {
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.launchSummary strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.launchHint {
+  font-size: 0.8125rem;
+  color: #fdba74;
+}
+
+@media (max-width: 768px) {
+  .guide {
+    padding: 22px 18px;
+  }
+
+  .guideHead {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .guideTitle {
+    font-size: 1.6rem;
+  }
+
+  .sampleNote {
+    align-items: flex-start;
+  }
+
+  .guideStep {
+    flex-wrap: wrap;
+  }
+
+  .guideAction {
+    width: 100%;
+    padding-left: 42px;
+  }
+
+  .helpGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .launchRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

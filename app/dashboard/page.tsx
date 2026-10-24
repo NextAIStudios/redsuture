@@ -140,46 +140,63 @@ type ScanType = 'live-url' | 'github-repo' | 'local-dir' | 'whitebox' | 'target-
 type ScanMode = 'quick' | 'standard' | 'deep';
 type Severity = 'critical' | 'high' | 'medium' | 'low';
 
-const NAV_ITEMS: { id: Tab; label: string; short: string; icon: (p: IconProps) => React.ReactElement }[] = [
-  { id: 'overview', label: 'Overview', short: 'Overview', icon: GridIcon },
-  { id: 'new-scan', label: 'New scan', short: 'New scan', icon: RadarIcon },
-  { id: 'findings', label: 'Findings', short: 'Findings', icon: AlertIcon },
-  { id: 'history', label: 'Scan history', short: 'History', icon: ClockIcon },
+// Sidebar entries. `hint` is a plain-language line under each label so a
+// first-time user knows what every page is for.
+const NAV_ITEMS: { id: Tab; label: string; hint: string; icon: (p: IconProps) => React.ReactElement }[] = [
+  { id: 'overview', label: 'Overview', hint: 'Next steps & summary', icon: GridIcon },
+  { id: 'new-scan', label: 'New scan', hint: 'Test an app or repo', icon: RadarIcon },
+  { id: 'findings', label: 'Findings', hint: 'Issues & how to fix them', icon: AlertIcon },
+  { id: 'history', label: 'Scan history', hint: "Every scan you've run", icon: ClockIcon },
 ];
 
 const PAGE_META: Record<Tab, { title: string; sub: string }> = {
-  overview: { title: 'Overview', sub: 'Your security posture across all targets' },
-  'new-scan': { title: 'New scan', sub: 'Configure an autonomous penetration test' },
-  findings: { title: 'Findings', sub: 'Verified vulnerabilities and remediation' },
-  history: { title: 'Scan history', sub: 'Past scans and remediation packages' },
+  overview: { title: 'Overview', sub: 'A quick look at your security — and what to do next' },
+  'new-scan': { title: 'New scan', sub: 'Test an app, API or code repository in four steps' },
+  findings: { title: 'Findings', sub: "What we found, proof it's real, and how to fix it" },
+  history: { title: 'Scan history', sub: 'Every scan so far — click one to open its findings' },
 };
 
-const STATS: { label: string; value: string; hint: string; tone: 'neutral' | 'critical' | 'high' | 'good'; icon: (p: IconProps) => React.ReactElement }[] = [
-  { label: 'Completed scans', value: '7', hint: 'Across 3 targets', tone: 'neutral', icon: RadarIcon },
-  { label: 'Critical findings', value: '3', hint: 'Verified with PoC', tone: 'critical', icon: AlertIcon },
-  { label: 'High findings', value: '10', hint: 'Verified with PoC', tone: 'high', icon: AlertIcon },
-  { label: 'Fixes generated', value: '12', hint: 'Patches & guides ready', tone: 'good', icon: FileCheckIcon },
-];
-
 const TARGET_TYPES: { id: ScanType; label: string; badge: string; desc: string; icon: (p: IconProps) => React.ReactElement }[] = [
-  { id: 'live-url', label: 'Web application', badge: 'Black-box', desc: 'Production or staging URLs, SPAs and public API gateways.', icon: GlobeIcon },
-  { id: 'github-repo', label: 'Git repository', badge: 'Source', desc: 'GitHub, GitLab or Bitbucket — logic bugs, secrets and taint flaws.', icon: GitIcon },
-  { id: 'local-dir', label: 'Local directory', badge: 'Pre-deploy', desc: 'Application folders and packages before they ship.', icon: FolderIcon },
-  { id: 'whitebox', label: 'White-box hybrid', badge: 'Deepest', desc: 'Source code and a live URL together for code-informed exploits.', icon: LayersIcon },
-  { id: 'target-list', label: 'Target list', badge: 'Bulk', desc: 'Many services, endpoints or hosts in one run.', icon: ListIcon },
+  { id: 'live-url', label: 'Web application', badge: 'Most common', desc: "A website or API that's already online. You'll paste its address.", icon: GlobeIcon },
+  { id: 'github-repo', label: 'Git repository', badge: 'Source code', desc: 'Code on GitHub, GitLab or Bitbucket — catch bugs before they ship.', icon: GitIcon },
+  { id: 'local-dir', label: 'Local folder', badge: 'Before deploy', desc: 'A project folder on the machine running RedSuture.', icon: FolderIcon },
+  { id: 'whitebox', label: 'Code + live app', badge: 'Most thorough', desc: 'Your repository and its running app together, for the deepest test.', icon: LayersIcon },
+  { id: 'target-list', label: 'Many targets', badge: 'Bulk', desc: 'A list of sites, APIs or repos to test in one run.', icon: ListIcon },
 ];
 
 const MODEL_OPTIONS = [
-  { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude', desc: 'Deep AST code comprehension and precise fix generation' },
-  { value: 'openai/gpt-5.4', label: 'OpenAI GPT-5.4', desc: 'Fast exploratory attack graphs and dynamic fuzzing' },
-  { value: 'ensemble', label: 'Frontier AI Ensemble', desc: 'Anthropic code tracing correlated with OpenAI attack hypotheses' },
+  { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude', desc: 'Best all-rounder — strongest at reading code and writing fixes', recommended: true },
+  { value: 'openai/gpt-5.4', label: 'OpenAI GPT-5.4', desc: 'Fast, good at exploring a live app', recommended: false },
+  { value: 'ensemble', label: 'Both together', desc: 'Uses both models for a second opinion', recommended: false },
 ];
 
-const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string }[] = [
-  { value: 'quick', label: 'Quick', time: '~5 min', desc: 'OWASP surface, auth endpoints and rapid parameter testing' },
-  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Full authentication boundaries, injection vectors and API mapping' },
-  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Multi-step exploit chains and correlated white-box taint analysis' },
+const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string; recommended?: boolean }[] = [
+  { value: 'quick', label: 'Quick', time: '~5 min', desc: 'Checks the most common weak spots and logins', recommended: true },
+  { value: 'standard', label: 'Standard', time: '~15 min', desc: 'Thorough test of logins, data access and APIs' },
+  { value: 'deep', label: 'Deep', time: '~45 min', desc: 'Longest — links issues together to find the hardest bugs' },
 ];
+
+// Severity in plain words, shown in the findings help panel.
+const SEVERITY_GUIDE: { level: 'critical' | 'high' | 'medium' | 'low'; text: string }[] = [
+  { level: 'critical', text: 'Easy to abuse with serious damage. Fix today.' },
+  { level: 'high', text: 'Serious, but harder to abuse. Fix this week.' },
+  { level: 'medium', text: 'Limited impact. Plan a fix.' },
+  { level: 'low', text: 'Minor hardening. Fix when convenient.' },
+];
+
+// The demo scans shown until real results arrive; flagged "Sample" in the UI.
+const SAMPLE_SCAN_IDS = new Set(MOCK_SCANS.map(s => s.id));
+
+// First-run checklist progress, kept in this browser.
+const GUIDE_KEY = 'rs_guide';
+type GuideState = { dismissed?: boolean; scanned?: boolean; reviewed?: boolean; downloaded?: boolean };
+function loadGuide(): GuideState {
+  try {
+    return JSON.parse(localStorage.getItem(GUIDE_KEY) || '{}') as GuideState;
+  } catch {
+    return {};
+  }
+}
 
 type ScheduleId = 'manual' | 'weekly' | 'monthly' | 'daily' | 'continuous';
 
@@ -343,10 +360,12 @@ export default function DashboardPage() {
   // Target inputs
   const [targetUrl, setTargetUrl] = useState('');
   const [targetRepo, setTargetRepo] = useState('');
-  const [targetDir, setTargetDir] = useState('./my-app');
-  const [whiteboxRepo, setWhiteboxRepo] = useState('https://github.com/org/repo');
-  const [whiteboxUrl, setWhiteboxUrl] = useState('https://your-app.com');
+  const [targetDir, setTargetDir] = useState('');
+  const [whiteboxRepo, setWhiteboxRepo] = useState('');
+  const [whiteboxUrl, setWhiteboxUrl] = useState('');
   const [targetListContent, setTargetListContent] = useState('');
+  // The user must confirm they may test the target before launching.
+  const [authorized, setAuthorized] = useState(false);
   
   // Model & scan options
   const [aiModel, setAiModel] = useState('anthropic/claude-sonnet-4-6');
@@ -374,11 +393,25 @@ export default function DashboardPage() {
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [guide, setGuide] = useState<GuideState>({});
   useEffect(() => {
-    // Hydration-safe read of the client-only profile after mount.
+    // Hydration-safe read of client-only state (profile, checklist) after mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProfile(loadProfile());
+    setGuide(loadGuide());
   }, []);
+
+  const updateGuide = (patch: GuideState) => {
+    setGuide(prev => {
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem(GUIDE_KEY, JSON.stringify(next));
+      } catch {
+        /* storage unavailable — progress just won't persist */
+      }
+      return next;
+    });
+  };
 
   // Agent drill-down: the agent whose steps are shown, and that agent's steps.
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -497,34 +530,44 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Only what the user actually entered — never a placeholder target, since a
+  // scan actively tests whatever it is pointed at.
   const getActiveTargets = (): { targets: string[]; targetType: string } => {
     if (scanType === 'live-url') {
-      const url = targetUrl.trim() || 'https://api.enterprise-gateway.io';
-      return { targets: [url], targetType: 'url' };
+      const url = targetUrl.trim();
+      return { targets: url ? [url] : [], targetType: 'url' };
     }
     if (scanType === 'github-repo') {
-      const repo = targetRepo.trim() || 'https://github.com/enterprise/core-api';
-      return { targets: [repo], targetType: 'repo' };
+      const repo = targetRepo.trim();
+      return { targets: repo ? [repo] : [], targetType: 'repo' };
     }
     if (scanType === 'local-dir') {
-      const dir = targetDir.trim() || './services/auth';
-      return { targets: [dir], targetType: 'dir' };
+      const dir = targetDir.trim();
+      return { targets: dir ? [dir] : [], targetType: 'dir' };
     }
     if (scanType === 'whitebox') {
-      const repo = whiteboxRepo.trim() || 'https://github.com/org/repo';
-      const url = whiteboxUrl.trim() || 'https://api.enterprise-gateway.io';
-      return { targets: [repo, url], targetType: 'whitebox' };
+      const repo = whiteboxRepo.trim();
+      const url = whiteboxUrl.trim();
+      return { targets: repo && url ? [repo, url] : [], targetType: 'whitebox' };
     }
-    if (scanType === 'target-list') {
-      const lines = targetListContent.split('\n').map(l => l.trim()).filter(l => Boolean(l && !l.startsWith('#')));
-      return { targets: lines.length > 0 ? lines : ['https://api.gateway.io', 'https://auth.gateway.io'], targetType: 'list' };
+    const lines = targetListContent.split('\n').map(l => l.trim()).filter(l => Boolean(l && !l.startsWith('#')));
+    return { targets: lines, targetType: 'list' };
+  };
+
+  // Why the launch button is disabled, in plain words (null when ready).
+  const launchBlocker = (): string | null => {
+    if (getActiveTargets().targets.length === 0) {
+      return scanType === 'whitebox'
+        ? 'Add both the repository and the live app address in step 3.'
+        : 'Add what you want to test in step 3.';
     }
-    return { targets: ['https://api.enterprise-gateway.io'], targetType: 'url' };
+    if (!authorized) return 'Confirm you have permission to test this target.';
+    return null;
   };
 
   const startScan = async () => {
     const { targets, targetType } = getActiveTargets();
-    if (scanProgress.status === 'running') return;
+    if (scanProgress.status === 'running' || launchBlocker()) return;
 
     setScanProgress({
       status: 'running',
@@ -578,6 +621,7 @@ export default function DashboardPage() {
       }
 
       setActiveRunId(data.runId);
+      updateGuide({ scanned: true });
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(() => pollScan(data.runId), 2000);
       // Immediately run first poll
@@ -594,12 +638,72 @@ export default function DashboardPage() {
     return styles.scoreGood;
   };
 
+  // Switching pages also ticks the "review what was found" checklist step.
+  const openTab = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === 'findings') updateGuide({ reviewed: true });
+  };
+
   const goToFindings = (scan: typeof MOCK_SCANS[0]) => {
     setSelectedScan(scan);
-    setActiveTab('findings');
+    openTab('findings');
+  };
+
+  // Downloads of a finding's fix also tick the "download a fix" step.
+  const downloadFix = (filename: string, content: string, mimeType: string) => {
+    downloadFile(filename, content, mimeType);
+    updateGuide({ downloaded: true });
   };
 
   const pageMeta = PAGE_META[activeTab];
+  const blocker = launchBlocker();
+  const activeTargets = getActiveTargets().targets;
+  const hasSampleScans = scansList.some(s => SAMPLE_SCAN_IDS.has(s.id));
+  const showingSampleFindings = findingsList === MOCK_VULNS;
+
+  // Summary numbers derived from the scans actually listed.
+  const totals = scansList.reduce(
+    (acc, sc) => ({ critical: acc.critical + sc.critical, high: acc.high + sc.high, all: acc.all + sc.critical + sc.high + sc.medium + sc.low }),
+    { critical: 0, high: 0, all: 0 },
+  );
+  const stats: { label: string; value: number; hint: string; tone: 'neutral' | 'critical' | 'high' | 'good'; icon: (p: IconProps) => React.ReactElement }[] = [
+    { label: 'Completed scans', value: scansList.length, hint: `Across ${new Set(scansList.map(sc => sc.target)).size} targets`, tone: 'neutral', icon: RadarIcon },
+    { label: 'Critical issues', value: totals.critical, hint: 'Fix these first', tone: 'critical', icon: AlertIcon },
+    { label: 'High issues', value: totals.high, hint: 'Fix these next', tone: 'high', icon: AlertIcon },
+    { label: 'Fixes ready', value: totals.all, hint: 'Patches & guides to download', tone: 'good', icon: FileCheckIcon },
+  ];
+
+  const guideSteps: { key: string; title: string; desc: string; done: boolean; action: React.ReactNode }[] = [
+    {
+      key: 'workspace',
+      title: 'Set up your workspace',
+      desc: 'Add your company name and website.',
+      done: Boolean(profile?.company),
+      action: <Link href="/dashboard/settings" className="btn-secondary">Open settings</Link>,
+    },
+    {
+      key: 'scan',
+      title: 'Run your first scan',
+      desc: "Pick what to test and launch it — the default settings are fine.",
+      done: Boolean(guide.scanned),
+      action: <button className="btn-primary" onClick={() => openTab('new-scan')}>Start a scan</button>,
+    },
+    {
+      key: 'review',
+      title: 'Review what was found',
+      desc: 'Each issue comes with proof it is real and a plain explanation.',
+      done: Boolean(guide.reviewed),
+      action: <button className="btn-secondary" onClick={() => openTab('findings')}>Open findings</button>,
+    },
+    {
+      key: 'fix',
+      title: 'Download a fix',
+      desc: 'Grab the ready-made patch or guide and hand it to your developer.',
+      done: Boolean(guide.downloaded),
+      action: <button className="btn-secondary" onClick={() => openTab('findings')}>Get a fix</button>,
+    },
+  ];
+  const guideDone = guideSteps.filter(st => st.done).length;
 
   const liveScanCard = scanProgress.status !== 'idle' && (
     <section className={styles.panel}>
@@ -728,24 +832,42 @@ export default function DashboardPage() {
         </div>
 
         <nav className={styles.sidebarNav} aria-label="Dashboard navigation">
+          {!sidebarCollapsed && <span className={styles.navGroup}>Workspace</span>}
           {NAV_ITEMS.map(item => (
             <button
               key={item.id}
-              className={`${styles.navItem} ${activeTab === item.id ? styles.navItemActive : ''}`}
-              onClick={() => setActiveTab(item.id)}
+              className={`${styles.navItem} ${styles.navItemTall} ${activeTab === item.id ? styles.navItemActive : ''}`}
+              onClick={() => openTab(item.id)}
+              title={sidebarCollapsed ? `${item.label} — ${item.hint}` : undefined}
+              aria-current={activeTab === item.id ? 'page' : undefined}
             >
               <item.icon size={18} />
-              {!sidebarCollapsed && <span>{item.label}</span>}
+              {!sidebarCollapsed && (
+                <span className={styles.navText}>
+                  <span>{item.label}</span>
+                  <span className={styles.navHint}>{item.hint}</span>
+                </span>
+              )}
             </button>
           ))}
-          <Link href="/dashboard/docs" className={styles.navItem} title="Developer docs">
+
+          {!sidebarCollapsed && <span className={styles.navGroup}>Help</span>}
+          <button
+            className={styles.navItem}
+            onClick={() => { updateGuide({ dismissed: false }); openTab('overview'); }}
+            title={sidebarCollapsed ? 'Getting started guide' : undefined}
+          >
+            <CheckIcon size={18} />
+            {!sidebarCollapsed && <span>Getting started</span>}
+          </button>
+          <Link href="/dashboard/docs" className={styles.navItem} title={sidebarCollapsed ? 'Developer docs' : undefined}>
             <CodeIcon size={18} />
             {!sidebarCollapsed && <span>Developer docs</span>}
           </Link>
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <button className={`btn-primary ${styles.startScanBtn}`} onClick={() => setActiveTab('new-scan')}>
+          <button className={`btn-primary ${styles.startScanBtn}`} onClick={() => openTab('new-scan')}>
             <PlusIcon size={16} />
             {!sidebarCollapsed && <span>New scan</span>}
           </button>
@@ -765,33 +887,97 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className={styles.main}>
         <header className={styles.topBar}>
-          <div>
-            <h1 className={styles.pageTitle}>{pageMeta.title}</h1>
-            <p className={styles.pageSub}>{pageMeta.sub}</p>
+          <div className={styles.topBarLeft}>
+            <Link href="/" className={styles.mobileLogo} aria-label="RedSuture home">
+              <Logo showText={false} />
+            </Link>
+            <div>
+              <h1 className={styles.pageTitle}>{pageMeta.title}</h1>
+              <p className={styles.pageSub}>{pageMeta.sub}</p>
+            </div>
           </div>
           <div className={styles.topBarRight}>
-            <button className="btn-secondary" onClick={() => downloadFile('redsuture-compliance-audit.json', JSON.stringify({ scans: scansList, findings: findingsList }, null, 2), 'application/json')}>
-              <DownloadIcon size={14} /> Export audit bundle
+            <button
+              className="btn-secondary"
+              aria-label="Export audit bundle"
+              title="Export audit bundle"
+              onClick={() => downloadFile('redsuture-compliance-audit.json', JSON.stringify({ scans: scansList, findings: findingsList }, null, 2), 'application/json')}
+            >
+              <DownloadIcon size={14} /> <span className={styles.topBtnText}>Export audit bundle</span>
             </button>
-            <button className="btn-primary" onClick={() => setActiveTab('new-scan')}>
+            <button className="btn-primary" onClick={() => openTab('new-scan')}>
               <PlusIcon size={14} /> New scan
             </button>
           </div>
         </header>
 
+        {/* Phones: the sidebar is hidden, so the sections become a tab strip. */}
+        <nav className={styles.mobileTabs} aria-label="Dashboard sections">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.id}
+              className={`${styles.mobileTab} ${activeTab === item.id ? styles.mobileTabActive : ''}`}
+              onClick={() => openTab(item.id)}
+              aria-current={activeTab === item.id ? 'page' : undefined}
+            >
+              {item.label}
+            </button>
+          ))}
+          <Link href="/dashboard/docs" className={styles.mobileTab}>Docs</Link>
+        </nav>
+
         <div className={styles.content}>
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <div className={styles.stack}>
-              <div className={styles.statsGrid}>
-                {STATS.map(s => (
-                  <div key={s.label} className={styles.statCard}>
-                    <div className={styles.statTop}>
-                      <span className={styles.statLabel}>{s.label}</span>
-                      <span className={`${styles.statIcon} ${styles[`tone_${s.tone}`]}`}><s.icon size={16} /></span>
+              {!guide.dismissed && (
+                <section className={styles.guide} aria-labelledby="guide-title">
+                  <div className={styles.guideHead}>
+                    <div>
+                      <span className={styles.guideEyebrow}>Getting started · {guideDone} of {guideSteps.length} done</span>
+                      <h2 id="guide-title" className={styles.guideTitle}>
+                        {guideDone === guideSteps.length ? "You're all set." : 'New here? Four steps to your first fix.'}
+                      </h2>
                     </div>
-                    <div className={styles.statValue}>{s.value}</div>
-                    <div className={styles.statHint}>{s.hint}</div>
+                    <button className="btn-ghost" onClick={() => updateGuide({ dismissed: true })}>Hide guide</button>
+                  </div>
+                  <div className={styles.guideBar} aria-hidden="true">
+                    <span style={{ width: `${(guideDone / guideSteps.length) * 100}%` }} />
+                  </div>
+                  <ol className={styles.guideSteps}>
+                    {guideSteps.map((st, i) => (
+                      <li key={st.key} className={`${styles.guideStep} ${st.done ? styles.guideStepDone : ''}`}>
+                        <span className={styles.guideCheck} aria-hidden="true">{st.done ? <CheckIcon size={14} /> : i + 1}</span>
+                        <div className={styles.guideStepBody}>
+                          <span className={styles.guideStepTitle}>
+                            {st.title}
+                            {st.done && <span className={styles.srOnly}> (done)</span>}
+                          </span>
+                          <span className={styles.guideStepDesc}>{st.desc}</span>
+                        </div>
+                        {!st.done && <div className={styles.guideAction}>{st.action}</div>}
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+
+              {hasSampleScans && (
+                <p className={styles.sampleNote}>
+                  <span className={styles.samplePill}>Sample</span>
+                  <span>Scans marked <strong>Sample</strong> are example data so you can explore. Your own results appear here after your first scan.</span>
+                </p>
+              )}
+
+              <div className={styles.statsGrid}>
+                {stats.map(st => (
+                  <div key={st.label} className={styles.statCard}>
+                    <div className={styles.statTop}>
+                      <span className={styles.statLabel}>{st.label}</span>
+                      <span className={`${styles.statIcon} ${styles[`tone_${st.tone}`]}`}><st.icon size={16} /></span>
+                    </div>
+                    <div className={styles.statValue}>{st.value}</div>
+                    <div className={styles.statHint}>{st.hint}</div>
                   </div>
                 ))}
               </div>
@@ -799,7 +985,7 @@ export default function DashboardPage() {
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
                   <h2 className={styles.panelTitle}>Recent scans</h2>
-                  <button className="btn-ghost" onClick={() => setActiveTab('history')}>
+                  <button className="btn-ghost" onClick={() => openTab('history')}>
                     View all <ArrowRightIcon size={14} />
                   </button>
                 </div>
@@ -809,7 +995,10 @@ export default function DashboardPage() {
                       <button className={styles.scanRow} onClick={() => goToFindings(scan)}>
                         <span className={styles.scanTarget}>
                           <span className={styles.scanTargetUrl}>{scan.target}</span>
-                          <span className={styles.scanDate}>{scan.targetType} · {scan.date} · {scan.duration}</span>
+                          <span className={styles.scanDate}>
+                            {SAMPLE_SCAN_IDS.has(scan.id) && <span className={`${styles.samplePill} ${styles.samplePillLead}`}>Sample</span>}
+                            {scan.targetType} · {scan.date} · {scan.duration}
+                          </span>
                         </span>
                         <span className={styles.scanBadges}>
                           {scan.critical > 0 && <SeverityPill level="critical" count={scan.critical} />}
@@ -833,8 +1022,8 @@ export default function DashboardPage() {
                 <div className={styles.formSectionHead}>
                   <span className={styles.stepBadge}>1</span>
                   <div>
-                    <h2 className={styles.formSectionTitle}>Target architecture</h2>
-                    <p className={styles.formSectionDesc}>Select the digital asset surface you want autonomous agents to test.</p>
+                    <h2 className={styles.formSectionTitle}>What do you want to test?</h2>
+                    <p className={styles.formSectionDesc}>Pick the kind of thing to scan. Not sure? Start with <strong>Web application</strong>.</p>
                   </div>
                 </div>
                 <div className={styles.targetGrid} role="radiogroup" aria-label="Target type">
@@ -862,9 +1051,9 @@ export default function DashboardPage() {
                 <div className={styles.formSectionHead}>
                   <span className={styles.stepBadge}>2</span>
                   <div>
-                    <h2 className={styles.formSectionTitle}>Schedule</h2>
+                    <h2 className={styles.formSectionTitle}>When should it run?</h2>
                     <p className={styles.formSectionDesc}>
-                      Run once now, or automate recurring scans. Options depend on your {profile?.plan || 'Pro'} plan.
+                      Run it once now, or repeat it on a schedule. Not sure? Choose <strong>Run once</strong>. Options depend on your {profile?.plan || 'Pro'} plan.
                     </p>
                   </div>
                 </div>
@@ -956,47 +1145,47 @@ export default function DashboardPage() {
                 <div className={styles.formSectionHead}>
                   <span className={styles.stepBadge}>3</span>
                   <div>
-                    <h2 className={styles.formSectionTitle}>Scope configuration</h2>
-                    <p className={styles.formSectionDesc}>Scan only digital assets within your authorized organizational perimeter.</p>
+                    <h2 className={styles.formSectionTitle}>Where is it?</h2>
+                    <p className={styles.formSectionDesc}>Enter the address of what you&apos;re testing. Only test things you own or have written permission to test.</p>
                   </div>
                 </div>
 
                 {scanType === 'live-url' && (
                   <div className={styles.field}>
                     <label htmlFor="target-url" className={styles.inputLabel}>
-                      Application / API Gateway URL <span className={styles.inputHint}>HTTPS target address</span>
+                      Website or API address <span className={styles.inputHint}>Starts with https://</span>
                     </label>
-                    <input id="target-url" type="url" className={styles.input} placeholder="https://api.enterprise-gateway.io" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} />
+                    <input id="target-url" type="url" className={styles.input} placeholder="https://your-app.com" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} />
                   </div>
                 )}
 
                 {scanType === 'github-repo' && (
                   <div className={styles.field}>
                     <label htmlFor="target-repo" className={styles.inputLabel}>
-                      Source Code Repository <span className={styles.inputHint}>GitHub, GitLab, or Bitbucket HTTPS URL</span>
+                      Repository address <span className={styles.inputHint}>Link to the repo on GitHub, GitLab or Bitbucket</span>
                     </label>
-                    <input id="target-repo" type="url" className={styles.input} placeholder="https://github.com/enterprise/billing-service" value={targetRepo} onChange={e => setTargetRepo(e.target.value)} />
+                    <input id="target-repo" type="url" className={styles.input} placeholder="https://github.com/your-org/your-repo" value={targetRepo} onChange={e => setTargetRepo(e.target.value)} />
                   </div>
                 )}
 
                 {scanType === 'local-dir' && (
                   <div className={styles.field}>
                     <label htmlFor="target-dir" className={styles.inputLabel}>
-                      Local Codebase Path <span className={styles.inputHint}>Workspace or pre-deployment path</span>
+                      Folder path <span className={styles.inputHint}>On the machine running RedSuture</span>
                     </label>
-                    <input id="target-dir" type="text" className={styles.input} placeholder="./services/billing-service" value={targetDir} onChange={e => setTargetDir(e.target.value)} />
+                    <input id="target-dir" type="text" className={styles.input} placeholder="./my-app" value={targetDir} onChange={e => setTargetDir(e.target.value)} />
                   </div>
                 )}
 
                 {scanType === 'whitebox' && (
                   <div className={styles.twoCol}>
                     <div className={styles.field}>
-                      <label htmlFor="wb-repo" className={styles.inputLabel}>Repository URL</label>
-                      <input id="wb-repo" type="url" className={styles.input} placeholder="https://github.com/enterprise/auth-api" value={whiteboxRepo} onChange={e => setWhiteboxRepo(e.target.value)} />
+                      <label htmlFor="wb-repo" className={styles.inputLabel}>Repository address</label>
+                      <input id="wb-repo" type="url" className={styles.input} placeholder="https://github.com/your-org/your-repo" value={whiteboxRepo} onChange={e => setWhiteboxRepo(e.target.value)} />
                     </div>
                     <div className={styles.field}>
-                      <label htmlFor="wb-url" className={styles.inputLabel}>Live Staging URL</label>
-                      <input id="wb-url" type="url" className={styles.input} placeholder="https://staging.enterprise-auth.io" value={whiteboxUrl} onChange={e => setWhiteboxUrl(e.target.value)} />
+                      <label htmlFor="wb-url" className={styles.inputLabel}>Live app address</label>
+                      <input id="wb-url" type="url" className={styles.input} placeholder="https://staging.your-app.com" value={whiteboxUrl} onChange={e => setWhiteboxUrl(e.target.value)} />
                     </div>
                   </div>
                 )}
@@ -1004,13 +1193,13 @@ export default function DashboardPage() {
                 {scanType === 'target-list' && (
                   <div className={styles.field}>
                     <label htmlFor="target-list-txt" className={styles.inputLabel}>
-                      Target List <span className={styles.inputHint}>One URL, IP, or repository per line</span>
+                      List of targets <span className={styles.inputHint}>One address or repository per line</span>
                     </label>
                     <textarea
                       id="target-list-txt"
                       className={styles.textarea}
                       rows={5}
-                      placeholder={`https://api.enterprise.com\nhttps://auth.enterprise.com\nhttps://billing.enterprise.com`}
+                      placeholder={`https://app.your-company.com\nhttps://api.your-company.com\nhttps://github.com/your-org/your-repo`}
                       value={targetListContent}
                       onChange={e => setTargetListContent(e.target.value)}
                     />
@@ -1022,26 +1211,30 @@ export default function DashboardPage() {
                 <div className={styles.formSectionHead}>
                   <span className={styles.stepBadge}>4</span>
                   <div>
-                    <h2 className={styles.formSectionTitle}>AI reasoning model &amp; depth</h2>
-                    <p className={styles.formSectionDesc}>Configure frontier reasoning models and autonomous scan intensity.</p>
+                    <h2 className={styles.formSectionTitle}>How thorough should it be?</h2>
+                    <p className={styles.formSectionDesc}>The defaults work well for a first scan — you can change them any time.</p>
                   </div>
                 </div>
 
                 <div className={styles.twoCol}>
                   <div className={styles.field}>
-                    <label htmlFor="ai-model" className={styles.inputLabel}>Reasoning engine</label>
+                    <label htmlFor="ai-model" className={styles.inputLabel}>
+                      AI model <span className={styles.inputHint}>Leave the default if unsure</span>
+                    </label>
                     <select id="ai-model" className={styles.select} value={aiModel} onChange={e => setAiModel(e.target.value)}>
                       {MODEL_OPTIONS.map(m => (
-                        <option key={m.value} value={m.value}>{m.label} — {m.desc}</option>
+                        <option key={m.value} value={m.value}>{m.label}{m.recommended ? ' (recommended)' : ''} — {m.desc}</option>
                       ))}
                     </select>
                   </div>
 
                   <div className={styles.field}>
-                    <label htmlFor="scan-mode" className={styles.inputLabel}>Test depth</label>
+                    <label htmlFor="scan-mode" className={styles.inputLabel}>
+                      Depth <span className={styles.inputHint}>How long and how deep</span>
+                    </label>
                     <select id="scan-mode" className={styles.select} value={scanMode} onChange={e => setScanMode(e.target.value as ScanMode)}>
                       {DEPTH_OPTIONS.map(d => (
-                        <option key={d.value} value={d.value}>{d.label} ({d.time}) — {d.desc}</option>
+                        <option key={d.value} value={d.value}>{d.label} ({d.time}){d.recommended ? ' — best for a first scan' : ''} — {d.desc}</option>
                       ))}
                     </select>
                   </div>
@@ -1049,7 +1242,7 @@ export default function DashboardPage() {
 
                 <div className={styles.field} style={{ marginTop: '16px' }}>
                   <label htmlFor="instructions" className={styles.inputLabel}>
-                    Custom instructions <span className={styles.inputHint}>Optional credentials, scope limits, or auth headers</span>
+                    Notes for the agents <span className={styles.inputHint}>Optional — areas to focus on or avoid</span>
                   </label>
                   <input
                     id="instructions"
@@ -1064,27 +1257,77 @@ export default function DashboardPage() {
 
               {liveScanCard}
 
-              <div className={styles.formActions}>
-                <button
-                  type="button"
-                  className={`btn-primary ${styles.launchBtn}`}
-                  disabled={scanProgress.status === 'running'}
-                  onClick={startScan}
-                >
-                  {schedule === 'manual' ? <RadarIcon size={16} /> : <CalendarIcon size={16} />}
-                  {scanProgress.status === 'running'
-                    ? 'Scan in progress…'
-                    : schedule === 'manual'
-                      ? 'Launch scan'
-                      : 'Schedule & run first scan'}
-                </button>
-              </div>
+              <section className={styles.launchPanel} aria-label="Launch">
+                <label className={styles.authCheck}>
+                  <input type="checkbox" checked={authorized} onChange={e => setAuthorized(e.target.checked)} />
+                  <span>I own this target or have written permission to test it.</span>
+                </label>
+                <div className={styles.launchRow}>
+                  <p className={styles.launchSummary} aria-live="polite">
+                    {activeTargets.length > 0 ? (
+                      <>
+                        Ready to test <strong>{activeTargets[0]}</strong>
+                        {activeTargets.length > 1 && ` and ${activeTargets.length - 1} more`}
+                        {' · '}{DEPTH_OPTIONS.find(d => d.value === scanMode)?.label} depth
+                        {' · '}{SCHEDULES.find(sc => sc.id === schedule)?.label}
+                      </>
+                    ) : (
+                      blocker
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    className={`btn-primary ${styles.launchBtn}`}
+                    disabled={scanProgress.status === 'running' || Boolean(blocker)}
+                    onClick={startScan}
+                  >
+                    {schedule === 'manual' ? <RadarIcon size={16} /> : <CalendarIcon size={16} />}
+                    {scanProgress.status === 'running'
+                      ? 'Scan in progress…'
+                      : schedule === 'manual'
+                        ? 'Launch scan'
+                        : 'Schedule & run first scan'}
+                  </button>
+                </div>
+                {blocker && activeTargets.length > 0 && <p className={styles.launchHint}>{blocker}</p>}
+              </section>
             </div>
           )}
 
           {/* FINDINGS TAB */}
           {activeTab === 'findings' && (
             <div className={styles.stack}>
+              <details className={styles.helpBox}>
+                <summary>New here? How to read this page</summary>
+                <div className={styles.helpGrid}>
+                  <div>
+                    <h3 className={styles.helpTitle}>How urgent is it?</h3>
+                    <ul className={styles.helpList}>
+                      {SEVERITY_GUIDE.map(g => (
+                        <li key={g.level}><SeverityPill level={g.level} /> <span>{g.text}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className={styles.helpTitle}>What the terms mean</h3>
+                    <dl className={styles.helpTerms}>
+                      <div><dt>Proof of concept</dt><dd>The exact steps we used to show the issue is real. Every finding has one.</dd></div>
+                      <div><dt>CVSS</dt><dd>The industry-standard severity score, from 0 to 10.</dd></div>
+                      <div><dt>Security score</dt><dd>0–100 for the whole target. Higher is better.</dd></div>
+                      <div><dt>Patch</dt><dd>A ready-made code change that fixes the issue. Download it below.</dd></div>
+                    </dl>
+                  </div>
+                </div>
+                <p className={styles.helpFoot}>Start at the top of the list — the most urgent issues come first. Pick one to see the proof and the fix.</p>
+              </details>
+
+              {showingSampleFindings && (
+                <p className={styles.sampleNote}>
+                  <span className={styles.samplePill}>Sample</span>
+                  <span>These are example findings so you can see what a report looks like. Run a scan to see your own.</span>
+                </p>
+              )}
+
               <section className={styles.findingsHeader}>
                 <div className={styles.findingsMeta}>
                   <div className={styles.summaryLabel}>Active target</div>
@@ -1138,16 +1381,16 @@ export default function DashboardPage() {
 
                   <div className={styles.downloadBar}>
                     <div className={styles.downloadBarTitle}>
-                      <strong>Downloadable remediation package</strong>
-                      <span>Export this finding in your organization&apos;s preferred format</span>
+                      <strong>Download the fix</strong>
+                      <span>Give the patch to a developer, or follow the guide to fix it step by step.</span>
                     </div>
                     <div className={styles.downloadButtons}>
-                      <button className={styles.downloadBtn} onClick={() => downloadFile(`${selectedVuln.id}-code-fix.patch`, selectedVuln.patch, 'text/plain')}>
+                      <button className={styles.downloadBtn} onClick={() => downloadFix(`${selectedVuln.id}-code-fix.patch`, selectedVuln.patch, 'text/plain')}>
                         <DownloadIcon size={14} /> Patch <code>.patch</code>
                       </button>
                       <button
                         className={styles.downloadBtn}
-                        onClick={() => downloadFile(
+                        onClick={() => downloadFix(
                           `${selectedVuln.id}-remediation-guide.md`,
                           `# Remediation Guide: ${selectedVuln.title}\n\n## Vulnerability Details\n- Severity: ${selectedVuln.severity.toUpperCase()} (CVSS ${selectedVuln.cvss})\n- Type: ${selectedVuln.type}\n- Endpoint: ${selectedVuln.endpoint}\n\n## Description\n${selectedVuln.description}\n\n## Verified Proof of Concept\n\`\`\`\n${selectedVuln.poc}\n\`\`\`\n\n## Step-by-Step Fix Procedure\n${selectedVuln.fix || selectedVuln.remediation}\n\n## Surgical Code Patch\n\`\`\`diff\n${selectedVuln.patch}\n\`\`\`\n`,
                           'text/markdown'
@@ -1157,7 +1400,7 @@ export default function DashboardPage() {
                       </button>
                       <button
                         className={styles.downloadBtn}
-                        onClick={() => downloadFile(
+                        onClick={() => downloadFix(
                           `redsuture-${selectedVuln.id}.sarif`,
                           JSON.stringify({
                             version: '2.1.0',
@@ -1178,7 +1421,7 @@ export default function DashboardPage() {
                       </button>
                       <button
                         className={styles.downloadBtn}
-                        onClick={() => downloadFile(`audit-report-${selectedVuln.id}.json`, JSON.stringify(selectedVuln, null, 2), 'application/json')}
+                        onClick={() => downloadFix(`audit-report-${selectedVuln.id}.json`, JSON.stringify(selectedVuln, null, 2), 'application/json')}
                       >
                         <DownloadIcon size={14} /> Report <code>.json</code>
                       </button>
@@ -1186,17 +1429,17 @@ export default function DashboardPage() {
                   </div>
 
                   <section className={styles.vulnSection}>
-                    <h3 className={styles.vulnSectionTitle}>Proof of concept (sandbox verified)</h3>
+                    <h3 className={styles.vulnSectionTitle}>Proof it&apos;s real (verified in a sandbox)</h3>
                     <pre className={styles.codeBlock}><code>{selectedVuln.poc}</code></pre>
                   </section>
 
                   <section className={styles.vulnSection}>
-                    <h3 className={styles.vulnSectionTitle}>Impact &amp; root cause analysis</h3>
+                    <h3 className={styles.vulnSectionTitle}>What&apos;s wrong and why it matters</h3>
                     <p className={styles.vulnDesc}>{selectedVuln.description}</p>
                   </section>
 
                   <section className={styles.vulnSection}>
-                    <h3 className={styles.vulnSectionTitle}>Step-by-step remediation procedure</h3>
+                    <h3 className={styles.vulnSectionTitle}>How to fix it, step by step</h3>
                     <ol className={styles.fixSteps}>
                       {(selectedVuln.fix || selectedVuln.remediation || '').split('\n').map((step, idx) => (
                         <li key={idx}>{step.replace(/^\d+\.\s*/, '')}</li>
@@ -1205,7 +1448,7 @@ export default function DashboardPage() {
                   </section>
 
                   <section className={styles.vulnSection}>
-                    <h3 className={styles.vulnSectionTitle}>Surgical code patch</h3>
+                    <h3 className={styles.vulnSectionTitle}>The code change (patch)</h3>
                     <pre className={`${styles.codeBlock} ${styles.diff}`}>
                       {selectedVuln.patch.split('\n').map((line, idx) => (
                         <span key={idx} className={diffLineClass(line)}>{line || ' '}{'\n'}</span>
@@ -1218,6 +1461,7 @@ export default function DashboardPage() {
                       className="btn-primary"
                       onClick={() => {
                         navigator.clipboard?.writeText(selectedVuln.patch);
+                        updateGuide({ downloaded: true });
                         showToast('Code patch copied to clipboard');
                       }}
                     >
@@ -1242,7 +1486,7 @@ export default function DashboardPage() {
           {activeTab === 'history' && (
             <section className={styles.panel}>
               <div className={styles.panelHeader}>
-                <h2 className={styles.panelTitle}>Past scan executions</h2>
+                <h2 className={styles.panelTitle}>All scans</h2>
                 <button className="btn-secondary" onClick={() => downloadFile('all-scans-summary.json', JSON.stringify(scansList, null, 2), 'application/json')}>
                   <DownloadIcon size={14} /> Download all history
                 </button>
@@ -1254,8 +1498,8 @@ export default function DashboardPage() {
                       <th>Target</th>
                       <th>Date</th>
                       <th>Duration</th>
-                      <th>Verified Findings</th>
-                      <th>Security Score</th>
+                      <th>Issues found</th>
+                      <th>Score <span className={styles.thHint}>(higher is better)</span></th>
                       <th><span className={styles.srOnly}>Actions</span></th>
                     </tr>
                   </thead>
@@ -1263,7 +1507,10 @@ export default function DashboardPage() {
                     {scansList.map(scan => (
                       <tr key={scan.id} onClick={() => goToFindings(scan)}>
                         <td>
-                          <span className={styles.tableTarget}>{scan.target}</span>
+                          <span className={styles.tableTarget}>
+                            {scan.target}
+                            {SAMPLE_SCAN_IDS.has(scan.id) && <span className={styles.samplePill}>Sample</span>}
+                          </span>
                           <span className={styles.tableSub}>{scan.targetType}</span>
                         </td>
                         <td className={styles.tableMuted}>{scan.date}</td>
