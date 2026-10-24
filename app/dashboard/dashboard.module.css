@@ -2543,3 +2543,134 @@
 .notesToggle span {
   color: var(--text-muted);
 }
+
+/* ─── Findings: "Push the fix" through connected integrations ─── */
+
+.pushIntro {
+  margin: -4px 0 14px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.pushGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pushTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-surface);
+}
+
+.pushTileIcon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(229, 56, 59, 0.3);
+  border-radius: 50%;
+  background: rgba(229, 56, 59, 0.1);
+  color: #ff5148;
+}
+
+.pushTileTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.pushTileDesc {
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.pushBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--red-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.pushBtn:hover { background: var(--red-bright); }
+
+.pushConnect {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: 1px dashed var(--border-bright);
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.pushConnect:hover {
+  border-color: rgba(229, 56, 59, 0.5);
+  color: var(--text-primary);
+}
+
+.pushDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 7px 13px;
+  border-radius: var(--radius-pill);
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pushPending {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 7px 13px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.pushSpinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(244, 239, 234, 0.2);
+  border-top-color: #ff5148;
+  border-radius: 50%;
+  animation: pushSpin 0.7s linear infinite;
+}
+
+@keyframes pushSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 900px) {
+  .pushGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

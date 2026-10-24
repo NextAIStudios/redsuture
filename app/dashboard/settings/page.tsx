@@ -16,6 +16,7 @@ import {
 import {
   loadProfile, updateProfile, signOut, initials, type Profile,
 } from '../../lib/profile';
+import { loadIntegrations, setConnected } from '../../lib/integrations';
 
 type Section = 'general' | 'members' | 'billing' | 'integrations' | 'audit' | 'help';
 
@@ -72,6 +73,7 @@ export default function SettingsPage() {
   const [autoTopup, setAutoTopup] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<'org' | 'account' | null>(null);
+  const [integrations, setIntegrations] = useState<string[]>([]);
 
   useEffect(() => {
     const p = loadProfile() || FALLBACK;
@@ -80,8 +82,15 @@ export default function SettingsPage() {
     setProfile(p);
     setName(p.name);
     setCompany(p.company);
+    setIntegrations(loadIntegrations());
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
+
+  const toggleIntegration = (name: string) => {
+    const wasConnected = integrations.includes(name);
+    setIntegrations(setConnected(name, !wasConnected));
+    showToast(wasConnected ? `${name} disconnected` : `${name} connected`);
+  };
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -113,17 +122,25 @@ export default function SettingsPage() {
   const orgName = company.trim() || profile.company || 'your organization';
   const needsProvider = (what: string) => showToast(`${what} needs a connected provider`);
 
-  const IntegrationRow = ({ item, action }: { item: Integration; action: string }) => (
-    <div className={`${styles.integrationRow} ${item.soon ? styles.integrationSoon : ''}`}>
-      <span className={styles.integrationBrand}><item.Brand /></span>
-      <span className={styles.integrationName}>{item.name}</span>
-      {item.soon ? (
-        <span className={styles.comingSoon}><span className={styles.soonDot} /> Coming soon</span>
-      ) : (
-        <button className={styles.connectBtn} onClick={() => needsProvider(`Connecting ${item.name}`)}>{action}</button>
-      )}
-    </div>
-  );
+  const IntegrationRow = ({ item }: { item: Integration }) => {
+    const connected = integrations.includes(item.name);
+    return (
+      <div className={`${styles.integrationRow} ${item.soon ? styles.integrationSoon : ''}`}>
+        <span className={styles.integrationBrand}><item.Brand /></span>
+        <span className={styles.integrationName}>{item.name}</span>
+        {item.soon ? (
+          <span className={styles.comingSoon}><span className={styles.soonDot} /> Coming soon</span>
+        ) : connected ? (
+          <span className={styles.integrationActions}>
+            <span className={styles.connectedBadge}><CheckIcon size={12} /> Connected</span>
+            <button className={styles.disconnectBtn} onClick={() => toggleIntegration(item.name)}>Disconnect</button>
+          </span>
+        ) : (
+          <button className={styles.connectBtn} onClick={() => toggleIntegration(item.name)}>Connect</button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.page}>
@@ -400,7 +417,7 @@ export default function SettingsPage() {
                   <h2 className={styles.cardTitle}>Code providers</h2>
                   <p className={styles.cardDesc}>Connect repositories for source-aware pentests and PR reviews.</p>
                 </div>
-                {CODE_PROVIDERS.map(i => <IntegrationRow key={i.name} item={i} action="Connect" />)}
+                {CODE_PROVIDERS.map(i => <IntegrationRow key={i.name} item={i} />)}
               </section>
 
               <section className={styles.card}>
@@ -408,7 +425,7 @@ export default function SettingsPage() {
                   <h2 className={styles.cardTitle}>Notifications</h2>
                   <p className={styles.cardDesc}>Test results and new findings, posted where your team works.</p>
                 </div>
-                {NOTIFICATIONS.map(i => <IntegrationRow key={i.name} item={i} action="Connect" />)}
+                {NOTIFICATIONS.map(i => <IntegrationRow key={i.name} item={i} />)}
               </section>
 
               <section className={styles.card}>
@@ -416,7 +433,7 @@ export default function SettingsPage() {
                   <h2 className={styles.cardTitle}>Issue tracking</h2>
                   <p className={styles.cardDesc}>Two-way sync of vulnerabilities and their status with your tracker.</p>
                 </div>
-                {ISSUE_TRACKERS.map(i => <IntegrationRow key={i.name} item={i} action="Connect" />)}
+                {ISSUE_TRACKERS.map(i => <IntegrationRow key={i.name} item={i} />)}
               </section>
 
               <section className={styles.card}>
@@ -427,7 +444,7 @@ export default function SettingsPage() {
                   </div>
                   <button className={styles.secondaryBtn} onClick={() => needsProvider('Adding an MCP server')}><PlusIcon size={15} /> Add an MCP server</button>
                 </div>
-                {INFRASTRUCTURE.map(i => <IntegrationRow key={i.name} item={i} action="Connect" />)}
+                {INFRASTRUCTURE.map(i => <IntegrationRow key={i.name} item={i} />)}
               </section>
 
               <section className={styles.card}>

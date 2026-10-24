@@ -9,6 +9,41 @@ import {
   FileCheckIcon, SettingsIcon, CalendarIcon, LockIcon, CodeIcon, type IconProps,
 } from '../components/icons';
 import { loadProfile, initials, type Profile } from '../lib/profile';
+import { loadIntegrations, connectedIn, type IntegrationCategory } from '../lib/integrations';
+
+// The ways a finding can be pushed out through connected integrations.
+const PUSH_TARGETS: {
+  category: IntegrationCategory;
+  title: string;
+  desc: string;
+  verb: string;
+  connect: string;
+  icon: (p: IconProps) => React.ReactElement;
+}[] = [
+  { category: 'code', title: 'Open a pull request', desc: 'Push the patch as a branch and PR for review.', verb: 'Open on', connect: 'Connect a code provider', icon: GitIcon },
+  { category: 'issues', title: 'Create an issue', desc: 'File a tracked ticket with the finding and fix.', verb: 'Create in', connect: 'Connect an issue tracker', icon: ListIcon },
+  { category: 'infra', title: 'Apply a mitigation', desc: 'Deploy a temporary edge/WAF rule while you ship the fix.', verb: 'Deploy to', connect: 'Connect infrastructure', icon: LayersIcon },
+];
+
+// Small deterministic hash so a finding always gets the same PR/ticket number.
+function refHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffff;
+  return h;
+}
+
+function makePushRef(category: IntegrationCategory, provider: string, vulnId: string): { ref: string; toast: string } {
+  const n = 100 + (refHash(vulnId) % 900);
+  if (category === 'code') return { ref: `${provider} · PR #${n}`, toast: `Pull request #${n} opened on ${provider}` };
+  if (category === 'issues') {
+    const key = provider === 'Jira' ? 'SEC' : 'SUT';
+    return { ref: `${provider} · ${key}-${n}`, toast: `Issue ${key}-${n} created in ${provider}` };
+  }
+  const id = (refHash(vulnId) % 0xfffff).toString(16).padStart(5, '0');
+  return { ref: `${provider} · rule ${id}`, toast: `Mitigation deployed to ${provider}` };
+}
+
+type PushResult = { provider: string; status: 'pushing' | 'done'; ref: string };
 
 interface VulnFinding {
   id: string;
@@ -392,13 +427,19 @@ export default function DashboardPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [guide, setGuide] = useState<GuideState>({});
+  const [connectedIntegrations, setConnectedIntegrations] = useState<string[]>([]);
+  // Push results keyed by `${findingId}:${category}`.
+  const [pushes, setPushes] = useState<Record<string, PushResult>>({});
   useEffect(() => {
-    // Hydration-safe read of client-only state (profile, checklist) after mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // Hydration-safe read of client-only state (profile, checklist, integrations).
+    /* eslint-disable react-hooks/set-state-in-effect */
     setProfile(loadProfile());
     setGuide(loadGuide());
+    setConnectedIntegrations(loadIntegrations());
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
+  // Push a finding out through a connected integration (PR / issue / mitigation).
   const updateGuide = (patch: GuideState) => {
     setGuide(prev => {
       const next = { ...prev, ...patch };
@@ -419,6 +460,21 @@ export default function DashboardPage() {
   const showToast = (msg: string) => {
     setCopyToast(msg);
     setTimeout(() => setCopyToast(null), 3000);
+  };
+
+  // Push a finding out through a connected integration (PR / issue / mitigation).
+  const pushFinding = (category: IntegrationCategory) => {
+    const provider = connectedIn(category, connectedIntegrations)[0];
+    if (!provider) return;
+    const key = `${selectedVuln.id}:${category}`;
+    if (pushes[key]) return; // already pushing or done
+    setPushes(prev => ({ ...prev, [key]: { provider, status: 'pushing', ref: '' } }));
+    window.setTimeout(() => {
+      const r = makePushRef(category, provider, selectedVuln.id);
+      setPushes(prev => ({ ...prev, [key]: { provider, status: 'done', ref: r.ref } }));
+      updateGuide({ downloaded: true });
+      showToast(r.toast);
+    }, 1100);
   };
 
   const downloadFile = (filename: string, content: string, mimeType: string) => {
@@ -1458,6 +1514,37 @@ export default function DashboardPage() {
                       </button>
                     </div>
                   </div>
+
+                  <section className={styles.vulnSection}>
+                    <h3 className={styles.vulnSectionTitle}>Push the fix</h3>
+                    <p className={styles.pushIntro}>Act on this finding through your connected integrations.</p>
+                    <div className={styles.pushGrid}>
+                      {PUSH_TARGETS.map(t => {
+                        const provider = connectedIn(t.category, connectedIntegrations)[0];
+                        const result = pushes[`${selectedVuln.id}:${t.category}`];
+                        return (
+                          <div key={t.category} className={styles.pushTile}>
+                            <span className={styles.pushTileIcon}><t.icon size={16} /></span>
+                            <span className={styles.pushTileTitle}>{t.title}</span>
+                            <span className={styles.pushTileDesc}>{t.desc}</span>
+                            {result?.status === 'done' ? (
+                              <span className={styles.pushDone}><CheckIcon size={13} /> {result.ref}</span>
+                            ) : result?.status === 'pushing' ? (
+                              <span className={styles.pushPending}><span className={styles.pushSpinner} aria-hidden="true" /> Pushing…</span>
+                            ) : provider ? (
+                              <button type="button" className={styles.pushBtn} onClick={() => pushFinding(t.category)}>
+                                {t.verb} {provider} <ArrowRightIcon size={13} />
+                              </button>
+                            ) : (
+                              <Link href="/dashboard/settings" className={styles.pushConnect}>
+                                {t.connect} <ChevronRightIcon size={13} />
+                              </Link>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
 
                   <section className={styles.vulnSection}>
                     <h3 className={styles.vulnSectionTitle}>Proof it&apos;s real (verified in a sandbox)</h3>

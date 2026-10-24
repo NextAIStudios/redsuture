@@ -832,3 +832,41 @@
   .searchInput { width: 100%; }
   .rowActions { flex-wrap: wrap; }
 }
+
+/* Connected integration state */
+.integrationActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.connectedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.disconnectBtn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.disconnectBtn:hover {
+  border-color: rgba(229, 56, 59, 0.5);
+  color: #fca5a5;
+}
