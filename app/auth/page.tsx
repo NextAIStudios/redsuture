@@ -108,9 +108,7 @@ export default function AuthPage() {
                     />
                   </div>
                   <div className={styles.field}>
-                    <label htmlFor="company" className={styles.label}>
-                      Company <span className={styles.optional}>Optional</span>
-                    </label>
+                    <label htmlFor="company" className={styles.label}>Company</label>
                     <input
                       id="company"
                       type="text"
@@ -119,6 +117,7 @@ export default function AuthPage() {
                       placeholder="Acme Inc."
                       value={form.company}
                       onChange={e => setForm({ ...form, company: e.target.value })}
+                      required
                     />
                   </div>
                 </div>

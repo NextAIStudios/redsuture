@@ -1875,3 +1875,157 @@
   line-height: 1.6;
   color: var(--text-secondary);
 }
+
+/* --- Precise-day picker (weekly pills / monthly calendar) --- */
+.schedulePicker {
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pickerHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.pickerTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pickerCap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.pickerUpgrade {
+  color: var(--red-bright);
+  font-weight: 600;
+  text-decoration: none;
+}
+.pickerUpgrade:hover { text-decoration: underline; }
+
+.weekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.weekdayPill {
+  padding: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.weekdayPill:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  background: rgba(255, 255, 255, 0.04);
+}
+.weekdayPill:disabled { opacity: 0.4; cursor: not-allowed; }
+.weekdayPillActive,
+.weekdayPillActive:hover {
+  border-color: rgba(229, 56, 59, 0.6);
+  background: rgba(229, 56, 59, 0.12);
+  color: var(--text-primary);
+}
+
+/* Calendar */
+.calendar {
+  max-width: 340px;
+}
+
+.calHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.calTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.calNav {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.calNav:hover {
+  border-color: var(--border-bright);
+  background: rgba(255, 255, 255, 0.05);
+}
+.calNavPrev svg { transform: rotate(180deg); }
+
+.calDow,
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calDow {
+  margin-bottom: 4px;
+}
+.calDow span {
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.calEmpty { aspect-ratio: 1; }
+
+.calDay {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.calDay:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  background: rgba(255, 255, 255, 0.05);
+}
+.calDay:disabled { opacity: 0.3; cursor: not-allowed; }
+.calDayActive,
+.calDayActive:hover {
+  border-color: rgba(229, 56, 59, 0.6);
+  background: rgba(229, 56, 59, 0.9);
+  color: #fff;
+  font-weight: 600;
+}
+
+.pickerSummary {
+  margin-top: 14px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}

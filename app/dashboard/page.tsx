@@ -171,7 +171,7 @@ const TARGET_TYPES: { id: ScanType; label: string; badge: string; desc: string; 
 
 const MODEL_OPTIONS = [
   { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude', desc: 'Deep AST code comprehension and precise fix generation' },
-  { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o', desc: 'Fast exploratory attack graphs and dynamic fuzzing' },
+  { value: 'openai/gpt-5.4', label: 'OpenAI GPT-5.4', desc: 'Fast exploratory attack graphs and dynamic fuzzing' },
   { value: 'ensemble', label: 'Frontier AI Ensemble', desc: 'Anthropic code tracing correlated with OpenAI attack hypotheses' },
 ];
 
@@ -200,6 +200,82 @@ function planTier(plan?: string): number {
   if (p.includes('pro') || p.includes('scale') || p.includes('business')) return 2;
   if (p.includes('team') || p.includes('starter')) return 1;
   return 2;
+}
+
+// How many precise days a plan may pick for a recurring schedule.
+// Starter picks a single day; Pro gets fine control; Enterprise is unlimited.
+function maxScheduleDays(plan?: string): number {
+  const t = planTier(plan);
+  if (t >= 3) return Infinity;
+  if (t >= 2) return 8;
+  return 1;
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+const ORDINAL = (n: number) => {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+// A month grid for choosing which calendar days a monthly scan runs on.
+// Selection is capped at `max`; days beyond the cap are disabled until one is freed.
+function ScheduleCalendar({
+  month, onMonth, selected, onToggle, max,
+}: {
+  month: Date;
+  onMonth: (d: Date) => void;
+  selected: number[];
+  onToggle: (day: number) => void;
+  max: number;
+}) {
+  const year = month.getFullYear(), m = month.getMonth();
+  const firstDow = new Date(year, m, 1).getDay();
+  const daysInMonth = new Date(year, m + 1, 0).getDate();
+  const atCap = selected.length >= max;
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div className={styles.calendar}>
+      <div className={styles.calHead}>
+        <button type="button" className={`${styles.calNav} ${styles.calNavPrev}`} aria-label="Previous month"
+          onClick={() => onMonth(new Date(year, m - 1, 1))}>
+          <ChevronRightIcon size={16} />
+        </button>
+        <span className={styles.calTitle}>{MONTH_NAMES[m]} {year}</span>
+        <button type="button" className={styles.calNav} aria-label="Next month"
+          onClick={() => onMonth(new Date(year, m + 1, 1))}>
+          <ChevronRightIcon size={16} />
+        </button>
+      </div>
+      <div className={styles.calDow}>
+        {WEEKDAYS.map(w => <span key={w}>{w[0]}</span>)}
+      </div>
+      <div className={styles.calGrid}>
+        {cells.map((d, i) => {
+          if (d === null) return <span key={`e${i}`} className={styles.calEmpty} />;
+          const active = selected.includes(d);
+          const blocked = !active && atCap;
+          return (
+            <button
+              key={d}
+              type="button"
+              disabled={blocked}
+              aria-pressed={active}
+              title={blocked ? `Your plan allows ${max} day${max === 1 ? '' : 's'}` : `Run on the ${ORDINAL(d)}`}
+              className={`${styles.calDay} ${active ? styles.calDayActive : ''}`}
+              onClick={() => onToggle(d)}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 const SEVERITY_LABEL: Record<Severity, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
@@ -276,6 +352,11 @@ export default function DashboardPage() {
   const [aiModel, setAiModel] = useState('anthropic/claude-sonnet-4-6');
   const [scanMode, setScanMode] = useState<ScanMode>('quick');
   const [schedule, setSchedule] = useState<ScheduleId>('manual');
+  // Precise days the recurring scan runs: weekday indexes (0=Sun) for weekly,
+  // day-of-month numbers for monthly. How many you may pick is plan-gated.
+  const [scheduleWeekdays, setScheduleWeekdays] = useState<number[]>([2]); // Tue
+  const [scheduleDays, setScheduleDays] = useState<number[]>([1]);         // the 1st
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [instructions, setInstructions] = useState('');
 
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
@@ -474,6 +555,8 @@ export default function DashboardPage() {
           llm: aiModel,
           instructions: instructions || undefined,
           schedule,
+          scheduleDays: schedule === 'monthly' ? scheduleDays : undefined,
+          scheduleWeekdays: schedule === 'weekly' ? scheduleWeekdays : undefined,
         }),
       });
       const data = await res.json();
@@ -484,8 +567,14 @@ export default function DashboardPage() {
       }
 
       if (schedule !== 'manual') {
+        let when = '';
+        if (schedule === 'weekly' && scheduleWeekdays.length) {
+          when = ` on ${[...scheduleWeekdays].sort((a, b) => a - b).map(d => WEEKDAYS[d]).join(', ')}`;
+        } else if (schedule === 'monthly' && scheduleDays.length) {
+          when = ` on the ${[...scheduleDays].sort((a, b) => a - b).map(ORDINAL).join(', ')}`;
+        }
         const label = SCHEDULES.find(s => s.id === schedule)?.label.toLowerCase();
-        showToast(`${label?.[0].toUpperCase()}${label?.slice(1)} scans scheduled for ${targets[0]}`);
+        showToast(`${label?.[0].toUpperCase()}${label?.slice(1)} scans scheduled${when} for ${targets[0]}`);
       }
 
       setActiveRunId(data.runId);
@@ -803,6 +892,58 @@ export default function DashboardPage() {
                     );
                   })}
                 </div>
+
+                {(schedule === 'weekly' || schedule === 'monthly') && (() => {
+                  const maxDays = maxScheduleDays(profile?.plan);
+                  const capLabel = maxDays === Infinity ? 'any days' : `up to ${maxDays} day${maxDays === 1 ? '' : 's'}`;
+                  const toggleWeekday = (d: number) => setScheduleWeekdays(prev =>
+                    prev.includes(d) ? prev.filter(x => x !== d) : prev.length >= maxDays ? prev : [...prev, d].sort((a, b) => a - b));
+                  const toggleDay = (d: number) => setScheduleDays(prev =>
+                    prev.includes(d) ? prev.filter(x => x !== d) : prev.length >= maxDays ? prev : [...prev, d].sort((a, b) => a - b));
+                  return (
+                    <div className={styles.schedulePicker}>
+                      <div className={styles.pickerHead}>
+                        <span className={styles.pickerTitle}>
+                          {schedule === 'weekly' ? 'Which days each week?' : 'Which days each month?'}
+                        </span>
+                        <span className={styles.pickerCap}>
+                          {profile?.plan || 'Pro'} plan · {capLabel}
+                          {maxDays !== Infinity && (
+                            <Link href="/dashboard/settings" className={styles.pickerUpgrade}>Upgrade for more</Link>
+                          )}
+                        </span>
+                      </div>
+
+                      {schedule === 'weekly' ? (
+                        <div className={styles.weekdayRow}>
+                          {WEEKDAYS.map((w, i) => {
+                            const active = scheduleWeekdays.includes(i);
+                            const blocked = !active && scheduleWeekdays.length >= maxDays;
+                            return (
+                              <button key={w} type="button" disabled={blocked} aria-pressed={active}
+                                className={`${styles.weekdayPill} ${active ? styles.weekdayPillActive : ''}`}
+                                onClick={() => toggleWeekday(i)}>{w}</button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <ScheduleCalendar month={calMonth} onMonth={setCalMonth}
+                          selected={scheduleDays} onToggle={toggleDay} max={maxDays} />
+                      )}
+
+                      <p className={styles.pickerSummary}>
+                        {schedule === 'weekly'
+                          ? scheduleWeekdays.length
+                            ? `Runs every ${[...scheduleWeekdays].sort((a, b) => a - b).map(d => WEEKDAYS[d]).join(', ')}.`
+                            : 'Pick at least one weekday.'
+                          : scheduleDays.length
+                            ? `Runs on the ${[...scheduleDays].sort((a, b) => a - b).map(ORDINAL).join(', ')} of each month.`
+                            : 'Pick at least one day.'}
+                      </p>
+                    </div>
+                  );
+                })()}
+
                 {schedule !== 'manual' && (
                   <p className={styles.scheduleNote}>
                     The first scan starts now; {SCHEDULES.find(s => s.id === schedule)?.label.toLowerCase()} runs after that are handled by the scheduler. Each run uses one scan from your plan — pause anytime from scan history.

@@ -165,12 +165,6 @@
   color: var(--text-primary);
 }
 
-.optional {
-  margin-left: 4px;
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
 .forgotLink {
   font-size: 0.8125rem;
   color: var(--text-secondary);

@@ -318,7 +318,7 @@ const FAQS = [
   },
   {
     q: 'Which AI reasoning models power the RedSuture platform?',
-    a: 'RedSuture orchestrates state-of-the-art reasoning models from Anthropic (Claude 3.5 Sonnet / Opus) and OpenAI (GPT-4o, o1, o3-mini) across AST taint analysis, attack tree exploration, and surgical patch synthesis. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
+    a: 'RedSuture orchestrates state-of-the-art reasoning models from Anthropic (Claude 3.5 Sonnet / Opus) and OpenAI (GPT-5.4, o3, o4-mini) across AST taint analysis, attack tree exploration, and surgical patch synthesis. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
   },
   {
     q: 'Is it safe to run scans against production infrastructure?',
