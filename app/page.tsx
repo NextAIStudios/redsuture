@@ -69,7 +69,7 @@ function onSpotlight(e: React.MouseEvent<HTMLElement>) {
 const NAV_LINKS = [
   { href: '#how-it-works', label: 'How it works' },
   { href: '#platform', label: 'Platform' },
-  { href: '#engine', label: 'AI engine' },
+  { href: '#engine', label: 'Agents' },
   { href: '#coverage', label: 'Coverage' },
   { href: '#deliverables', label: 'Remediation' },
   { href: '#pricing', label: 'Pricing' },
@@ -250,6 +250,9 @@ const TARGETS = [
   { icon: <ListIcon />, title: 'Bulk target lists', desc: 'Portfolios of microservices, domains, and subnets prioritized automatically.' },
 ];
 
+// The AI models the RedSuture Agents can run on, shown as options on the landing.
+const MODELS = ['MiniMax M3.1 Flash', 'DeepSeek V4.1 Flash', 'GLM-5.3', 'GPT-5.6 Sol', 'Claude Opus 5', 'Gemini 4 Argon'];
+
 const AGENTS = [
   { name: 'Reconnaissance Agent', desc: 'Discovers endpoints, parameters, HTTP methods, and exposed surface boundaries.' },
   { name: 'Adversarial Exploration Agent', desc: 'Formulates multi-step attack hypotheses using frontier AI reasoning.' },
@@ -351,7 +354,7 @@ const PLANS = [
 const FAQS = [
   {
     q: 'How does RedSuture differ from legacy vulnerability scanners?',
-    a: 'Legacy scanners rely on static regex and signature matching that produce excessive false positives. RedSuture deploys autonomous AI agents powered by OpenAI and Anthropic reasoning models that analyze business logic, chain multi-step exploits, and only report vulnerabilities that have been deterministically reproduced with working proof of concepts in a secure sandbox.',
+    a: 'Legacy scanners rely on static regex and signature matching that produce excessive false positives. RedSuture deploys autonomous AI agents — the RedSuture Agents — powered by your choice of frontier and open-weight reasoning models that analyze business logic, chain multi-step exploits, and only report vulnerabilities that have been deterministically reproduced with working proof of concepts in a secure sandbox.',
   },
   {
     q: 'What remediation deliverables are provided after a scan?',
@@ -359,7 +362,7 @@ const FAQS = [
   },
   {
     q: 'Which AI reasoning models power the RedSuture platform?',
-    a: 'RedSuture orchestrates state-of-the-art reasoning models from Anthropic (Claude Sonnet / Opus) and OpenAI (GPT-5.4, o3, o4-mini) across AST taint analysis, attack tree exploration, and surgical patch synthesis. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
+    a: 'The RedSuture Agents run on your choice of model: MiniMax M3.1 Flash (our house default — top accuracy at a fraction of the cost), DeepSeek V4.1 Flash, GLM-5.3, GPT-5.6 Sol, Claude Opus 5 and Gemini 4 Argon. Pick one per scan from the dashboard. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
   },
   {
     q: 'Is it safe to run scans against production infrastructure?',
@@ -590,9 +593,9 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
         <section id="engine" className={styles.section}>
           <div className="container">
             <SectionHeader
-              eyebrow="Frontier AI reasoning"
-              title="A coordinated red team of specialized AI agents."
-              sub="Powered by frontier reasoning models from Anthropic and OpenAI, RedSuture’s agent pipeline traces authentication flows, business logic, and multi-step attack chains that signature tools fail to detect."
+              eyebrow="RedSuture Agents"
+              title="Meet the RedSuture Agents."
+              sub="A coordinated red team of specialized agents runs every scan — reconnaissance, adversarial exploration, sandbox validation and remediation — tracing authentication flows, business logic and multi-step attack chains that signature tools miss."
             />
             <ol className={styles.pipeline} data-reveal>
               {AGENTS.map((a, i) => (
@@ -603,6 +606,16 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                 </li>
               ))}
             </ol>
+            <div className={styles.modelStrip} data-reveal>
+              <span className={styles.modelStripLabel}>Runs on your choice of model</span>
+              <ul className={styles.modelChips}>
+                {MODELS.map((m, i) => (
+                  <li key={m} className={`${styles.modelChip} ${i === 0 ? styles.modelChipLead : ''}`}>
+                    {m}{i === 0 && <span className={styles.modelChipTag}>House pick</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
 
@@ -765,7 +778,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                 <h4>Product</h4>
                 <a href="#how-it-works">How it works</a>
                 <a href="#platform">Platform</a>
-                <a href="#engine">AI engine</a>
+                <a href="#engine">Agents</a>
                 <a href="#pricing">Pricing</a>
               </div>
               <div className={styles.footerCol}>

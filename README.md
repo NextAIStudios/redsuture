@@ -35,7 +35,7 @@ RedSuture deploys RedSuture's engine AI agents that test your web apps, APIs and
 | Framework | Next.js 16 (App Router, TypeScript) |
 | UI | React 19, CSS Modules, shared design tokens in `app/globals.css` |
 | Pentest engine | RedSuture's engine (open source, runs in Docker) |
-| Default model | `anthropic/claude-sonnet-4-6` (any model the engine supports can be configured) |
+| Default model | `minimax/minimax-m3.1-flash` (any model the engine supports can be configured) |
 
 ---
 
@@ -61,7 +61,7 @@ cp .env.example .env.local   # then add your keys
 
 | Variable | Description |
 |----------|-------------|
-| `RS_MODEL` | Model in LiteLLM format, e.g. `anthropic/claude-sonnet-4-6` |
+| `RS_MODEL` | Model in LiteLLM format, e.g. `minimax/minimax-m3.1-flash` |
 | `RS_API_KEY` | API key for that model's provider |
 | `RS_ENGINE_BIN` | Path to the engine binary (defaults to `~/<engine-install>/bin`) |
 | `PORT` | Dev server port (`3333` in the examples below) |
@@ -149,7 +149,7 @@ curl -X POST http://localhost:3333/api/scan \
 | `targets` | Array of URLs, repository links or paths |
 | `targetType` | `url`, `repo`, `dir`, `whitebox`, `list` |
 | `mode` | `quick`, `standard`, `deep` |
-| `llm` | Optional model override (defaults to `anthropic/claude-sonnet-4-6`) |
+| `llm` | Optional model override (defaults to `minimax/minimax-m3.1-flash`) |
 | `instructions` | Optional scope notes, credentials or focus areas |
 
 ---

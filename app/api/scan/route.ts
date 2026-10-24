@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       targets,
       targetType = 'url',
       mode = 'quick',
-      llm = process.env.RS_MODEL || 'anthropic/claude-sonnet-4-6',
+      llm = process.env.RS_MODEL || 'minimax/minimax-m3.1-flash',
       instructions,
     } = await request.json();
 

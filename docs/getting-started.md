@@ -27,9 +27,9 @@ Set these in `.env.local` (see [`.env.example`](../.env.example)):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `RS_MODEL` | yes | Primary model in LiteLLM format, e.g. `anthropic/claude-sonnet-4-6`, `openai/gpt-5.4`, `openrouter/z-ai/glm-5.3`. |
+| `RS_MODEL` | yes | Primary model in LiteLLM format, e.g. `minimax/minimax-m3.1-flash`, `deepseek/deepseek-v4.1-flash`, `openrouter/z-ai/glm-5.3`. |
 | `RS_API_KEY` | yes | API key for the primary model's provider. `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` are also accepted as fallbacks. |
-| `RS_MODEL_FALLBACKS` | no | Comma-separated LiteLLM models tried, in order, if the primary provider fails. Unset → built-in defaults (`anthropic/claude-sonnet-4-6 → openai/gpt-5.4 → openrouter/z-ai/glm-5.3`). |
+| `RS_MODEL_FALLBACKS` | no | Comma-separated LiteLLM models tried, in order, if the primary provider fails. Unset → built-in defaults (`minimax/minimax-m3.1-flash → deepseek/deepseek-v4.1-flash → openrouter/z-ai/glm-5.3`). |
 | `RS_ENGINE_BIN` | no | Path to the engine binary. Unset → `~/<engine-install>/bin`, then the engine binary on `PATH`. |
 | `PORT` | no | Dev-server port (examples use `3333`). |
 

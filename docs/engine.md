@@ -29,7 +29,7 @@ background (it is **not** awaited — the HTTP response returns a `runId` right 
    back to the engine binary on `PATH`. If none can be launched the run is errored with an
    install hint.
 2. **Builds the model chain** — the requested model first, then each fallback
-   (`RS_MODEL_FALLBACKS`, or the built-in `anthropic/claude-sonnet-4-6 → openai/gpt-5.4
+   (`RS_MODEL_FALLBACKS`, or the built-in `minimax/minimax-m3.1-flash → deepseek/deepseek-v4.1-flash
    → openrouter/z-ai/glm-5.3`), de-duplicated.
 3. **Builds CLI args** that match the real engine:
    - `--target <t>` (repeated) or `--target-list <file>` for a target list

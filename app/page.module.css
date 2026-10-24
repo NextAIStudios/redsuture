@@ -1234,6 +1234,73 @@
   color: var(--ink-2);
 }
 
+/* ─── Model lineup strip (RedSuture Agents) ────────────────── */
+
+.modelStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin-top: 44px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.modelStripLabel {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+.modelChips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modelChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 15px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--pill);
+  background: rgba(244, 239, 234, 0.025);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease);
+}
+
+.modelChip:hover {
+  border-color: rgba(244, 239, 234, 0.3);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.modelChipLead {
+  border-color: rgba(255, 81, 72, 0.55);
+  background: var(--red-soft);
+  color: #fecaca;
+}
+
+.modelChipTag {
+  padding: 1px 8px;
+  border-radius: var(--pill);
+  background: var(--red);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 /* ─── Coverage: an editorial index ─────────────────────────── */
 
 .targets {

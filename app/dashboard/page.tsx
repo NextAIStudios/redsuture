@@ -164,10 +164,15 @@ const TARGET_TYPES: { id: ScanType; label: string; badge: string; desc: string; 
   { id: 'target-list', label: 'Many targets', badge: 'Bulk', desc: 'A list of sites, APIs or repos to test in one run.', icon: ListIcon },
 ];
 
+// The AI model that powers the RedSuture Agents. MiniMax is our house default —
+// top accuracy for a fraction of the cost; the rest are offered as options.
 const MODEL_OPTIONS = [
-  { value: 'anthropic/claude-sonnet-4-6', label: 'Anthropic Claude', desc: 'Best all-rounder — strongest at reading code and writing fixes', recommended: true },
-  { value: 'openai/gpt-5.4', label: 'OpenAI GPT-5.4', desc: 'Fast, good at exploring a live app', recommended: false },
-  { value: 'ensemble', label: 'Both together', desc: 'Uses both models for a second opinion', recommended: false },
+  { value: 'minimax/minimax-m3.1-flash', label: 'MiniMax M3.1 Flash', desc: 'RedSuture house pick — top accuracy at a fraction of the cost', recommended: true },
+  { value: 'deepseek/deepseek-v4.1-flash', label: 'DeepSeek V4.1 Flash', desc: 'Highest benchmark accuracy, lowest cost', recommended: false },
+  { value: 'openrouter/z-ai/glm-5.3', label: 'GLM-5.3', desc: 'Strong open-weight model, great value', recommended: false },
+  { value: 'openai/gpt-5.6-sol', label: 'GPT-5.6 Sol', desc: 'OpenAI frontier reasoning', recommended: false },
+  { value: 'anthropic/claude-opus-5', label: 'Claude Opus 5', desc: "Anthropic's deepest code reasoning", recommended: false },
+  { value: 'gemini/gemini-4-argon', label: 'Gemini 4 Argon', desc: 'Google frontier multimodal', recommended: false },
 ];
 
 const DEPTH_OPTIONS: { value: ScanMode; label: string; time: string; desc: string; recommended?: boolean }[] = [
@@ -368,7 +373,7 @@ export default function DashboardPage() {
   const [authorized, setAuthorized] = useState(false);
   
   // Model & scan options
-  const [aiModel, setAiModel] = useState('anthropic/claude-sonnet-4-6');
+  const [aiModel, setAiModel] = useState('minimax/minimax-m3.1-flash');
   const [scanMode, setScanMode] = useState<ScanMode>('quick');
   const [schedule, setSchedule] = useState<ScheduleId>('manual');
   // Precise days the recurring scan runs: weekday indexes (0=Sun) for weekly,
@@ -1212,7 +1217,7 @@ export default function DashboardPage() {
                   <span className={styles.stepBadge}>4</span>
                   <div>
                     <h2 className={styles.formSectionTitle}>How thorough should it be?</h2>
-                    <p className={styles.formSectionDesc}>The defaults work well for a first scan — you can change them any time.</p>
+                    <p className={styles.formSectionDesc}>Your <strong>RedSuture Agents</strong> run the test. Choose which AI model powers them and how deep to go — the defaults work well for a first scan.</p>
                   </div>
                 </div>
 

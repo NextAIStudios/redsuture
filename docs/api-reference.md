@@ -16,7 +16,7 @@ Starts a the engine pentest in the background and returns immediately.
 | `target` | `string` | — | Single-target convenience; used if `targets` is empty. |
 | `targetType` | `string` | `"url"` | `url` · `repo` · `dir` · `whitebox` · `list`. For `list`, the first target is treated as a path passed to `--target-list`. |
 | `mode` | `string` | `"quick"` | `quick` · `standard` · `deep`. |
-| `llm` | `string` | `anthropic/claude-sonnet-4-6` | Primary model (LiteLLM format). Fallbacks follow (see [scan engine](engine.md#model-fallback-backup-models)). |
+| `llm` | `string` | `minimax/minimax-m3.1-flash` | Primary model (LiteLLM format). Fallbacks follow (see [scan engine](engine.md#model-fallback-backup-models)). |
 | `instructions` | `string` | — | Free-text scope notes / credentials / focus. Passed to the engine as `--instruction`. |
 | `schedule` | `string` | `"manual"` | `manual` · `weekly` · `monthly` · `daily` · `continuous`. Stored with the request; recurring execution needs a scheduler backend. |
 

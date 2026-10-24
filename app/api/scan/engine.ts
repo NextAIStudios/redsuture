@@ -16,9 +16,10 @@ export interface ScanParams {
 // first; if its provider fails, the engine is re-run against each of these in
 // turn. Override with RS_MODEL_FALLBACKS (a comma-separated list).
 const DEFAULT_FALLBACK_MODELS = [
-  'anthropic/claude-sonnet-4-6',
-  'openai/gpt-5.4',
+  'minimax/minimax-m3.1-flash',
+  'deepseek/deepseek-v4.1-flash',
   'openrouter/z-ai/glm-5.3',
+  'anthropic/claude-opus-5',
 ];
 
 // Engine exit codes for a successful run: 0 (no findings) or 2 (findings were
