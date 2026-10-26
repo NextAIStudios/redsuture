@@ -440,7 +440,45 @@ function Faq() {
 export default function LandingPage() {
   const launchScan = useLaunchScan();
   const pageRef = useRef<HTMLDivElement>(null);
+  const stepsRef = useRef<HTMLOListElement>(null);
   useReveal(pageRef);
+
+  useEffect(() => {
+    const el = stepsRef.current;
+    if (!el) return;
+    const update = () => {
+      const cards = el.querySelectorAll<HTMLElement>(':scope > li');
+      if (cards.length >= 3) {
+        const c1 = cards[0].offsetLeft + 37;
+        const c2 = cards[1].offsetLeft + 37;
+        const c3 = cards[2].offsetLeft + 37;
+        const mid1 = (c1 + c2) / 2;
+        const mid2 = (c2 + c3) / 2;
+        const q1 = (c1 + mid1) / 2;
+        const q2 = (mid1 + c2) / 2;
+        const q3 = (c2 + mid2) / 2;
+        const q4 = (mid2 + c3) / 2;
+        el.style.setProperty('--c1', `${c1}px`);
+        el.style.setProperty('--c2', `${c2}px`);
+        el.style.setProperty('--c3', `${c3}px`);
+        el.style.setProperty('--mid1', `${mid1}px`);
+        el.style.setProperty('--mid2', `${mid2}px`);
+        el.style.setProperty('--q1', `${q1}px`);
+        el.style.setProperty('--q2', `${q2}px`);
+        el.style.setProperty('--q3', `${q3}px`);
+        el.style.setProperty('--q4', `${q4}px`);
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
   return (
     <div className={styles.page} ref={pageRef}>
       <NavBar />
@@ -532,9 +570,18 @@ export default function LandingPage() {
               title="From scope configuration to verified patch in minutes."
               sub="Traditional penetration tests take weeks to schedule and yield static PDFs. RedSuture executes autonomously whenever you ship and delivers surgical fixes your team can apply immediately."
             />
-            <ol className={styles.steps} data-reveal>
+            <ol ref={stepsRef} className={styles.steps} data-reveal>
+              <div className={styles.jumpingDot} aria-hidden="true">
+                <span className={styles.dotPulse} />
+                <span className={styles.dotCore} />
+              </div>
               {STEPS.map((s, i) => (
                 <li key={s.title} className={styles.step}>
+                  <span
+                    className={styles.circleRipple}
+                    aria-hidden="true"
+                    style={{ animationDelay: i === 0 ? '0s' : i === 1 ? '2.1s' : '4.08s' }}
+                  />
                   <span className={styles.stepNum}>{String(i + 1).padStart(2, '0')}</span>
                   <h3 className={styles.stepTitle}>{s.title}</h3>
                   <p className={styles.stepDesc}>{s.desc}</p>
