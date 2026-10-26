@@ -2047,6 +2047,11 @@
 
 }
 
+.beamsHolder {
+  max-width: 900px;
+  margin: 0 auto 56px;
+}
+
 /* ─── Integrations: push the fix + logo wall ───────────────── */
 
 .pushRow {

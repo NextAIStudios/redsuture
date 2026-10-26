@@ -750,17 +750,10 @@ export default function DashboardPage() {
     },
     {
       key: 'fix',
-      title: 'Download a fix',
-      desc: 'Grab the ready-made patch or guide and hand it to your developer.',
-      done: Boolean(guide.downloaded),
-      action: <button className="btn-secondary" onClick={() => openTab('findings')}>Get a fix</button>,
-    },
-    {
-      key: 'push',
-      title: 'Push the fix to your tools',
-      desc: 'Open a pull request, file an issue, or apply a mitigation straight from a finding.',
-      done: Boolean(guide.pushed),
-      action: <button className="btn-secondary" onClick={() => openTab('findings')}>Push a fix</button>,
+      title: 'Get the fix out',
+      desc: 'Download the patch or guide, or push it straight to GitHub, Jira or your cloud.',
+      done: Boolean(guide.downloaded || guide.pushed),
+      action: <button className="btn-secondary" onClick={() => openTab('findings')}>Open a finding</button>,
     },
   ];
   const guideDone = guideSteps.filter(st => st.done).length;

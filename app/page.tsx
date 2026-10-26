@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 import Logo from './components/Logo';
 import Suture from './components/Suture';
+import IntegrationBeams from './components/IntegrationBeams';
 import {
   ShieldIcon, CodeIcon, GitIcon, GaugeIcon, FileCheckIcon, GlobeIcon, LayersIcon,
   FolderIcon, ApiIcon, ListIcon, CheckIcon, ArrowRightIcon, PlusIcon, DownloadIcon,
@@ -733,6 +734,9 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
               title="Ship the fix without leaving your stack."
               sub="A finding never just sits in a dashboard. Push the fix straight into the tools your team already uses."
             />
+            <div className={styles.beamsHolder} data-reveal>
+              <IntegrationBeams />
+            </div>
             <div className={styles.pushRow} data-reveal>
               {PUSH_ACTIONS.map(a => (
                 <div key={a.title} className={styles.pushCard}>
