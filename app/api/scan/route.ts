@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       targets,
       targetType = 'url',
       mode = 'quick',
-      llm = process.env.RS_MODEL || 'minimax/minimax-m3.1-flash',
+      llm = process.env.RS_MODEL || 'gemini/gemini-4-argon',
       instructions,
     } = await request.json();
 

@@ -8,7 +8,12 @@ import Suture from './components/Suture';
 import {
   ShieldIcon, CodeIcon, GitIcon, GaugeIcon, FileCheckIcon, GlobeIcon, LayersIcon,
   FolderIcon, ApiIcon, ListIcon, CheckIcon, ArrowRightIcon, PlusIcon, DownloadIcon,
+  type IconProps,
 } from './components/icons';
+import {
+  GitHubBrand, GitLabBrand, BitbucketBrand, SlackBrand, TeamsBrand, JiraBrand,
+  LinearBrand, AwsBrand, VercelBrand, SupabaseBrand, CloudflareBrand, GoogleCloudBrand, RailwayBrand,
+} from './components/brands';
 
 const AUTH_FLAG = 'rs_authed';
 
@@ -72,6 +77,7 @@ const NAV_LINKS = [
   { href: '#engine', label: 'Agents' },
   { href: '#coverage', label: 'Coverage' },
   { href: '#deliverables', label: 'Remediation' },
+  { href: '#integrations', label: 'Integrations' },
   { href: '#pricing', label: 'Pricing' },
   { href: '#faq', label: 'FAQ' },
 ];
@@ -251,7 +257,32 @@ const TARGETS = [
 ];
 
 // The AI models the RedSuture Agents can run on, shown as options on the landing.
-const MODELS = ['MiniMax M3.1 Flash', 'DeepSeek V4.1 Flash', 'GLM-5.3', 'GPT-5.6 Sol', 'Claude Opus 5', 'Gemini 4 Argon'];
+const MODELS = ['Gemini 4 Argon', 'MiniMax M3.1 Flash', 'DeepSeek V4.1 Flash', 'GLM-5.3', 'GPT-5.6 Sol', 'Claude Opus 5'];
+
+// What you can do with a verified finding, straight from the dashboard.
+const PUSH_ACTIONS: { icon: (p: IconProps) => React.ReactElement; title: string; desc: string }[] = [
+  { icon: GitIcon, title: 'Open a pull request', desc: 'Push the ready-made patch as a branch and PR on GitHub, GitLab or Bitbucket.' },
+  { icon: ListIcon, title: 'Create an issue', desc: 'File a tracked ticket in Jira or Linear, kept in sync with the finding.' },
+  { icon: LayersIcon, title: 'Apply a mitigation', desc: 'Deploy a temporary edge or WAF rule on your cloud while you ship the real fix.' },
+];
+
+// Every integration, grouped, shown with its logo.
+type BrandCmp = () => React.ReactElement;
+const INTEGRATION_GROUPS: { label: string; items: { name: string; Brand: BrandCmp }[] }[] = [
+  { label: 'Code providers', items: [
+    { name: 'GitHub', Brand: GitHubBrand }, { name: 'GitLab', Brand: GitLabBrand }, { name: 'Bitbucket', Brand: BitbucketBrand },
+  ] },
+  { label: 'Issue tracking', items: [
+    { name: 'Jira', Brand: JiraBrand }, { name: 'Linear', Brand: LinearBrand },
+  ] },
+  { label: 'Notifications', items: [
+    { name: 'Slack', Brand: SlackBrand }, { name: 'Microsoft Teams', Brand: TeamsBrand },
+  ] },
+  { label: 'Infrastructure', items: [
+    { name: 'AWS', Brand: AwsBrand }, { name: 'Vercel', Brand: VercelBrand }, { name: 'Supabase', Brand: SupabaseBrand },
+    { name: 'Cloudflare', Brand: CloudflareBrand }, { name: 'Google Cloud', Brand: GoogleCloudBrand }, { name: 'Railway', Brand: RailwayBrand },
+  ] },
+];
 
 const AGENTS = [
   { name: 'Reconnaissance Agent', desc: 'Discovers endpoints, parameters, HTTP methods, and exposed surface boundaries.' },
@@ -689,6 +720,42 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
 <span className={styles.diffCtx}>  {'}'}</span>
                 </pre>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Integrations */}
+        <section id="integrations" className={styles.section}>
+          <div className="container">
+            <SectionHeader
+              center
+              eyebrow="Integrations"
+              title="Ship the fix without leaving your stack."
+              sub="A finding never just sits in a dashboard. Push the fix straight into the tools your team already uses."
+            />
+            <div className={styles.pushRow} data-reveal>
+              {PUSH_ACTIONS.map(a => (
+                <div key={a.title} className={styles.pushCard}>
+                  <span className={styles.pushCardIcon}><a.icon size={18} /></span>
+                  <h3 className={styles.pushCardTitle}>{a.title}</h3>
+                  <p className={styles.pushCardDesc}>{a.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className={styles.logoWall} data-reveal>
+              {INTEGRATION_GROUPS.map(g => (
+                <div key={g.label} className={styles.logoGroup}>
+                  <span className={styles.logoGroupLabel}>{g.label}</span>
+                  <ul className={styles.logoList}>
+                    {g.items.map(({ name, Brand }) => (
+                      <li key={name} className={styles.logoChip}>
+                        <span className={styles.logoMark}><Brand /></span>
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </div>
         </section>

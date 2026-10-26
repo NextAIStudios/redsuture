@@ -16,6 +16,7 @@ export interface ScanParams {
 // first; if its provider fails, the engine is re-run against each of these in
 // turn. Override with RS_MODEL_FALLBACKS (a comma-separated list).
 const DEFAULT_FALLBACK_MODELS = [
+  'gemini/gemini-4-argon',
   'minimax/minimax-m3.1-flash',
   'deepseek/deepseek-v4.1-flash',
   'openrouter/z-ai/glm-5.3',

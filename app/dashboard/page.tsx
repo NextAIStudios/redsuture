@@ -219,7 +219,7 @@ const SAMPLE_SCAN_IDS = new Set(MOCK_SCANS.map(s => s.id));
 
 // First-run checklist progress, kept in this browser.
 const GUIDE_KEY = 'rs_guide';
-type GuideState = { dismissed?: boolean; scanned?: boolean; reviewed?: boolean; downloaded?: boolean };
+type GuideState = { dismissed?: boolean; scanned?: boolean; reviewed?: boolean; downloaded?: boolean; pushed?: boolean };
 function loadGuide(): GuideState {
   try {
     return JSON.parse(localStorage.getItem(GUIDE_KEY) || '{}') as GuideState;
@@ -472,7 +472,7 @@ export default function DashboardPage() {
     window.setTimeout(() => {
       const r = makePushRef(category, provider, selectedVuln.id);
       setPushes(prev => ({ ...prev, [key]: { provider, status: 'done', ref: r.ref } }));
-      updateGuide({ downloaded: true });
+      updateGuide({ pushed: true });
       showToast(r.toast);
     }, 1100);
   };
@@ -755,6 +755,13 @@ export default function DashboardPage() {
       done: Boolean(guide.downloaded),
       action: <button className="btn-secondary" onClick={() => openTab('findings')}>Get a fix</button>,
     },
+    {
+      key: 'push',
+      title: 'Push the fix to your tools',
+      desc: 'Open a pull request, file an issue, or apply a mitigation straight from a finding.',
+      done: Boolean(guide.pushed),
+      action: <button className="btn-secondary" onClick={() => openTab('findings')}>Push a fix</button>,
+    },
   ];
   const guideDone = guideSteps.filter(st => st.done).length;
 
@@ -989,7 +996,7 @@ export default function DashboardPage() {
                     <div>
                       <span className={styles.guideEyebrow}>Getting started · {guideDone} of {guideSteps.length} done</span>
                       <h2 id="guide-title" className={styles.guideTitle}>
-                        {guideDone === guideSteps.length ? "You're all set." : 'New here? Four steps to your first fix.'}
+                        {guideDone === guideSteps.length ? "You're all set." : 'New here? A few steps to your first shipped fix.'}
                       </h2>
                     </div>
                     <button className="btn-ghost" onClick={() => updateGuide({ dismissed: true })}>Hide guide</button>
