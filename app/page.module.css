@@ -2047,9 +2047,13 @@
 
 }
 
+/* Full-bleed: the integration grid spans the whole page width. */
 .beamsHolder {
-  max-width: 900px;
-  margin: 0 auto 56px;
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: -16px;
+  margin-bottom: 48px;
 }
 
 /* ─── Integrations: push the fix + logo wall ───────────────── */

@@ -9,9 +9,9 @@ import {
   LinearBrand, AwsBrand, VercelBrand, SupabaseBrand, CloudflareBrand, GoogleCloudBrand, RailwayBrand,
 } from './brands';
 
-// Every integration, as a faded grid in the background (masked to fade toward
-// the middle) — and six brought forward as nodes on an animated-beam diagram
-// with RedSuture at the hub. "We connect to all of this, and it all flows here."
+// Every integration, tiled edge-to-edge as a "we connect to all of this" grid,
+// with six brought forward as nodes on an animated-beam diagram — RedSuture at
+// the hub. The grid is cleared in the middle so the diagram reads.
 const ALL = [
   { name: 'GitHub', Brand: GitHubBrand }, { name: 'GitLab', Brand: GitLabBrand }, { name: 'Bitbucket', Brand: BitbucketBrand },
   { name: 'Jira', Brand: JiraBrand }, { name: 'Linear', Brand: LinearBrand },
@@ -19,6 +19,9 @@ const ALL = [
   { name: 'AWS', Brand: AwsBrand }, { name: 'Vercel', Brand: VercelBrand }, { name: 'Supabase', Brand: SupabaseBrand },
   { name: 'Cloudflare', Brand: CloudflareBrand }, { name: 'Google Cloud', Brand: GoogleCloudBrand }, { name: 'Railway', Brand: RailwayBrand },
 ];
+
+// Tile the list enough times to fill a wide, tall grid.
+const CELLS = Array.from({ length: 7 }).flatMap((_, rep) => ALL.map((item, i) => ({ item, key: `${rep}-${i}` })));
 
 export default function IntegrationBeams() {
   const container = useRef<HTMLDivElement>(null);
@@ -33,10 +36,10 @@ export default function IntegrationBeams() {
   return (
     <div className={styles.wrap} ref={container} aria-hidden="true">
       <div className={styles.grid}>
-        {ALL.map(({ name, Brand }) => (
-          <div key={name} className={styles.gridCell}>
-            <span className={styles.gridMark}><Brand /></span>
-            <span className={styles.gridName}>{name}</span>
+        {CELLS.map(({ item, key }) => (
+          <div key={key} className={styles.gridCell}>
+            <span className={styles.gridMark}><item.Brand /></span>
+            <span className={styles.gridName}>{item.name}</span>
           </div>
         ))}
       </div>
@@ -49,7 +52,7 @@ export default function IntegrationBeams() {
         </div>
         <div className={styles.row}>
           <div ref={l2} className={styles.node}><JiraBrand /></div>
-          <div ref={center} className={styles.center}><LayersIcon size={30} /></div>
+          <div ref={center} className={styles.center}><LayersIcon size={34} /></div>
           <div ref={r2} className={styles.node}><VercelBrand /></div>
         </div>
         <div className={styles.row}>
