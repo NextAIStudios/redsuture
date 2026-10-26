@@ -11,10 +11,6 @@ import {
   FolderIcon, ApiIcon, ListIcon, CheckIcon, ArrowRightIcon, PlusIcon, DownloadIcon,
   type IconProps,
 } from './components/icons';
-import {
-  GitHubBrand, GitLabBrand, BitbucketBrand, SlackBrand, TeamsBrand, JiraBrand,
-  LinearBrand, AwsBrand, VercelBrand, SupabaseBrand, CloudflareBrand, GoogleCloudBrand, RailwayBrand,
-} from './components/brands';
 
 const AUTH_FLAG = 'rs_authed';
 
@@ -236,15 +232,15 @@ const THREAT_VECTORS = [
 const STEPS = [
   {
     title: 'Define the scope',
-    desc: 'Point RedSuture at a live URL, an API gateway, a Git repository, or both for white-box correlation. You configure strict boundaries and test depth.',
+    desc: 'Point your RedSuture Agents at a live URL, an API, a Git repository, or both for white-box correlation. You set the scope and pick the depth — the agents handle the rest.',
   },
   {
-    title: 'Autonomous offensive agents execute',
-    desc: 'Frontier AI reasoning models orchestrate reconnaissance, hypothesis exploration, and exploit generation. Every finding is proven in an isolated sandbox.',
+    title: 'The RedSuture Agents go on the offensive',
+    desc: 'Autonomous agents run reconnaissance, hypothesis exploration and exploit generation, then prove every finding in an isolated sandbox before it is ever reported.',
   },
   {
-    title: 'Download verified code fixes',
-    desc: 'Each finding ships with severity scoring, PoC reproduction steps, root cause analysis, and ready-to-apply patches in unified diff, markdown, PDF, and SARIF formats.',
+    title: 'Get the fix out',
+    desc: 'Every finding ships with a proof of concept and a ready-to-apply patch. Download it, or push it straight to a pull request, an issue, or a cloud mitigation.',
   },
 ];
 
@@ -267,23 +263,6 @@ const PUSH_ACTIONS: { icon: (p: IconProps) => React.ReactElement; title: string;
   { icon: LayersIcon, title: 'Apply a mitigation', desc: 'Deploy a temporary edge or WAF rule on your cloud while you ship the real fix.' },
 ];
 
-// Every integration, grouped, shown with its logo.
-type BrandCmp = () => React.ReactElement;
-const INTEGRATION_GROUPS: { label: string; items: { name: string; Brand: BrandCmp }[] }[] = [
-  { label: 'Code providers', items: [
-    { name: 'GitHub', Brand: GitHubBrand }, { name: 'GitLab', Brand: GitLabBrand }, { name: 'Bitbucket', Brand: BitbucketBrand },
-  ] },
-  { label: 'Issue tracking', items: [
-    { name: 'Jira', Brand: JiraBrand }, { name: 'Linear', Brand: LinearBrand },
-  ] },
-  { label: 'Notifications', items: [
-    { name: 'Slack', Brand: SlackBrand }, { name: 'Microsoft Teams', Brand: TeamsBrand },
-  ] },
-  { label: 'Infrastructure', items: [
-    { name: 'AWS', Brand: AwsBrand }, { name: 'Vercel', Brand: VercelBrand }, { name: 'Supabase', Brand: SupabaseBrand },
-    { name: 'Cloudflare', Brand: CloudflareBrand }, { name: 'Google Cloud', Brand: GoogleCloudBrand }, { name: 'Railway', Brand: RailwayBrand },
-  ] },
-];
 
 const AGENTS = [
   { name: 'Reconnaissance Agent', desc: 'Discovers endpoints, parameters, HTTP methods, and exposed surface boundaries.' },
@@ -307,9 +286,10 @@ const PLANS = [
     desc: 'For solo developers and side projects that need real security testing.',
     features: [
       '5 scans per month',
-      'Web applications & REST APIs',
+      'Web apps & REST APIs',
+      'Quick-depth scans',
       'Proof of concept for every finding',
-      'Code patches (.patch) & guides (.md)',
+      'Patch & guide downloads',
       'Community support',
     ],
     cta: 'Start trial',
@@ -324,9 +304,11 @@ const PLANS = [
     features: [
       '12 scans per month',
       'Everything in Starter, plus:',
+      'Standard-depth scans',
       'Git repository scanning',
-      'SARIF export for CI/CD',
-      'Email support',
+      'Weekly & monthly scheduled scans',
+      'Push fixes to GitHub, GitLab & Bitbucket',
+      'SARIF export & email support',
     ],
     cta: 'Start trial',
     href: '/auth?mode=signup',
@@ -340,9 +322,10 @@ const PLANS = [
     features: [
       '25 scans per month',
       'Everything in Launch, plus:',
-      'GraphQL, gRPC & white-box testing',
+      'Deep-depth & white-box scans',
+      'Daily scheduled scans',
+      'Jira, Linear, Slack & infrastructure integrations',
       'Executive PDF reports',
-      'Jira, Slack & SIEM integrations',
       'Priority support',
     ],
     cta: 'Start trial',
@@ -357,6 +340,7 @@ const PLANS = [
     features: [
       '100 scans per month',
       'Everything in Team, plus:',
+      'Scan on every pull request',
       'SOC 2, ISO 27001 & PCI DSS mapping',
       'Role-based access control',
       'Dedicated success manager',
@@ -373,7 +357,7 @@ const PLANS = [
     features: [
       'Unlimited scans',
       'Self-hosted or private VPC runners',
-      'Bring your own model',
+      'Bring your own model (default: Gemini 4 Argon)',
       'SAML / OIDC single sign-on',
       'Custom SLA & 24/7 escalation',
     ],
@@ -386,15 +370,19 @@ const PLANS = [
 const FAQS = [
   {
     q: 'How does RedSuture differ from legacy vulnerability scanners?',
-    a: 'Legacy scanners rely on static regex and signature matching that produce excessive false positives. RedSuture deploys autonomous AI agents — the RedSuture Agents — powered by your choice of frontier and open-weight reasoning models that analyze business logic, chain multi-step exploits, and only report vulnerabilities that have been deterministically reproduced with working proof of concepts in a secure sandbox.',
+    a: 'Legacy scanners rely on static regex and signature matching that produce excessive false positives. RedSuture deploys autonomous RedSuture Agents, backed by frontier and open-weight reasoning models, that analyze business logic, chain multi-step exploits, and only report vulnerabilities deterministically reproduced with a working proof of concept in a secure sandbox.',
   },
   {
     q: 'What remediation deliverables are provided after a scan?',
-    a: 'Every validated vulnerability includes a complete remediation package downloadable from the dashboard: unified diff .patch files ready for your codebase, step-by-step Markdown developer guides, executive audit PDF reports with compliance mapping, and standard SARIF v2.1.0 files for SIEM or CI/CD ingestion.',
+    a: 'Every validated vulnerability includes a complete remediation package: unified diff .patch files, step-by-step Markdown guides, executive audit PDF reports with compliance mapping, and SARIF v2.1.0 files. Download them from the dashboard, or push the fix straight into your stack — open a pull request, file a Jira or Linear issue, or apply a cloud mitigation.',
   },
   {
-    q: 'Which AI reasoning models power the RedSuture platform?',
-    a: 'The RedSuture Agents run on your choice of model: MiniMax M3.1 Flash (our house default — top accuracy at a fraction of the cost), DeepSeek V4.1 Flash, GLM-5.3, GPT-5.6 Sol, Claude Opus 5 and Gemini 4 Argon. Pick one per scan from the dashboard. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
+    q: 'Which AI models power the RedSuture Agents?',
+    a: 'Your RedSuture Agents run the pentest — the AI model is an engine detail, not something you pick per scan. By default they run on Gemini 4 Argon (our house pick), with an automatic fallback chain — MiniMax M3.1 Flash, DeepSeek V4.1 Flash, GLM-5.3, GPT-5.6 Sol and Claude Opus 5 — so a provider outage never stops a scan. Enterprise plans support bring-your-own-key (BYOK) and private VPC inference.',
+  },
+  {
+    q: 'How much control do I have over a scan?',
+    a: 'You pick the depth — Quick, Standard or Deep — right in the dashboard, and optionally add notes for the agents to focus on or avoid. Deeper scans are available on higher plans. The RedSuture Agents handle everything else, including which model to run.',
   },
   {
     q: 'Is it safe to run scans against production infrastructure?',
@@ -602,8 +590,8 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
 
               <article data-spot className={styles.card}>
                 <div className={styles.cardIcon}><FileCheckIcon /></div>
-                <h3 className={styles.cardTitle}>Downloadable remediation</h3>
-                <p className={styles.cardDesc}>Download .patch diffs, step-by-step Markdown guides, executive PDF reports, and SARIF v2.1.0 files directly from your dashboard.</p>
+                <h3 className={styles.cardTitle}>Remediation, your way</h3>
+                <p className={styles.cardDesc}>Download .patch diffs, Markdown guides, executive PDF reports and SARIF files — or push the fix straight into your stack.</p>
               </article>
 
               <article data-spot className={styles.card}>
@@ -614,8 +602,8 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
 
               <article data-spot className={styles.card}>
                 <div className={styles.cardIcon}><GitIcon /></div>
-                <h3 className={styles.cardTitle}>Enterprise integrations</h3>
-                <p className={styles.cardDesc}>Integrate findings seamlessly into GitHub code scanning, Jira issue tracking, SIEM platforms, and CI/CD pipelines.</p>
+                <h3 className={styles.cardTitle}>Push the fix to your stack</h3>
+                <p className={styles.cardDesc}>Open a pull request on GitHub, GitLab or Bitbucket, file an issue in Jira or Linear, or apply a mitigation on your cloud — in one click.</p>
               </article>
             </div>
           </div>
@@ -681,7 +669,7 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                 <SectionHeader
                   eyebrow="Remediation deliverables"
                   title="Everything your engineering team needs to close the flaw."
-                  sub="Each finding is exported in standard formats designed for immediate developer action and compliance audits."
+                  sub="Each finding is exported in standard formats for immediate developer action and compliance audits — download them, or push them straight into your tools."
                 />
                 <ul className={styles.formats}>
                   {FORMATS.map(f => (
@@ -743,21 +731,6 @@ Authorization: Bearer <span className={styles.tokStr}>&lt;tenant_b_session_jwt&g
                   <span className={styles.pushCardIcon}><a.icon size={18} /></span>
                   <h3 className={styles.pushCardTitle}>{a.title}</h3>
                   <p className={styles.pushCardDesc}>{a.desc}</p>
-                </div>
-              ))}
-            </div>
-            <div className={styles.logoWall} data-reveal>
-              {INTEGRATION_GROUPS.map(g => (
-                <div key={g.label} className={styles.logoGroup}>
-                  <span className={styles.logoGroupLabel}>{g.label}</span>
-                  <ul className={styles.logoList}>
-                    {g.items.map(({ name, Brand }) => (
-                      <li key={name} className={styles.logoChip}>
-                        <span className={styles.logoMark}><Brand /></span>
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               ))}
             </div>

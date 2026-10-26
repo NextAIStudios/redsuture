@@ -2103,74 +2103,10 @@
   color: var(--ink-2);
 }
 
-.logoWall {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px 48px;
-  padding: 36px;
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background: linear-gradient(180deg, #131010, #0e0c0c);
-}
 
-.logoGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.logoGroupLabel {
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--ink-3);
-}
-
-.logoList {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.logoChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  height: 40px;
-  padding: 0 15px 0 11px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--pill);
-  background: rgba(244, 239, 234, 0.025);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--ink);
-  transition: border-color 0.2s ease, transform 0.2s var(--ease), background 0.2s ease;
-}
-
-.logoChip:hover {
-  border-color: rgba(244, 239, 234, 0.32);
-  background: rgba(244, 239, 234, 0.05);
-  transform: translateY(-2px);
-}
-
-.logoMark {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
 
 @media (max-width: 900px) {
   .pushRow {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .logoWall {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 24px;
-    gap: 24px;
   }
 }

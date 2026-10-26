@@ -4,10 +4,22 @@ import { useRef } from 'react';
 import styles from './integrationBeams.module.css';
 import { AnimatedBeam } from './AnimatedBeam';
 import { LayersIcon } from './icons';
-import { GitHubBrand, GitLabBrand, JiraBrand, SlackBrand, CloudflareBrand, VercelBrand } from './brands';
+import {
+  GitHubBrand, GitLabBrand, BitbucketBrand, SlackBrand, TeamsBrand, JiraBrand,
+  LinearBrand, AwsBrand, VercelBrand, SupabaseBrand, CloudflareBrand, GoogleCloudBrand, RailwayBrand,
+} from './brands';
 
-// RedSuture at the hub; a spread of integrations beaming in. The six nodes are
-// a recognizable sample — the full list lives in the logo wall below.
+// Every integration, as a faded grid in the background (masked to fade toward
+// the middle) — and six brought forward as nodes on an animated-beam diagram
+// with RedSuture at the hub. "We connect to all of this, and it all flows here."
+const ALL = [
+  { name: 'GitHub', Brand: GitHubBrand }, { name: 'GitLab', Brand: GitLabBrand }, { name: 'Bitbucket', Brand: BitbucketBrand },
+  { name: 'Jira', Brand: JiraBrand }, { name: 'Linear', Brand: LinearBrand },
+  { name: 'Slack', Brand: SlackBrand }, { name: 'Microsoft Teams', Brand: TeamsBrand },
+  { name: 'AWS', Brand: AwsBrand }, { name: 'Vercel', Brand: VercelBrand }, { name: 'Supabase', Brand: SupabaseBrand },
+  { name: 'Cloudflare', Brand: CloudflareBrand }, { name: 'Google Cloud', Brand: GoogleCloudBrand }, { name: 'Railway', Brand: RailwayBrand },
+];
+
 export default function IntegrationBeams() {
   const container = useRef<HTMLDivElement>(null);
   const center = useRef<HTMLDivElement>(null);
@@ -20,6 +32,16 @@ export default function IntegrationBeams() {
 
   return (
     <div className={styles.wrap} ref={container} aria-hidden="true">
+      <div className={styles.grid}>
+        {ALL.map(({ name, Brand }) => (
+          <div key={name} className={styles.gridCell}>
+            <span className={styles.gridMark}><Brand /></span>
+            <span className={styles.gridName}>{name}</span>
+          </div>
+        ))}
+      </div>
+      <div className={styles.vignette} />
+
       <div className={styles.rows}>
         <div className={styles.row}>
           <div ref={l1} className={styles.node}><GitHubBrand /></div>
@@ -32,7 +54,7 @@ export default function IntegrationBeams() {
         </div>
         <div className={styles.row}>
           <div ref={l3} className={styles.node}><SlackBrand /></div>
-          <div ref={r3} className={styles.node}><GitLabBrand /></div>
+          <div ref={r3} className={styles.node}><LinearBrand /></div>
         </div>
       </div>
 
