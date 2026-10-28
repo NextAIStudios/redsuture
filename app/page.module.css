@@ -950,6 +950,17 @@
     repeating-linear-gradient(60deg, transparent 0 14px, rgba(244, 239, 234, 0.5) 14px 15.5px, transparent 15.5px 22px);
   mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  /* The thread stitches itself across once the section scrolls in; the
+     jumping dot then runs along it. */
+  clip-path: inset(0 100% 0 0);
+}
+
+.steps[data-in]::before {
+  animation: drawThreadLine 1.1s var(--ease) 0.15s forwards;
+}
+
+@keyframes drawThreadLine {
+  to { clip-path: inset(0 0 0 0); }
 }
 
 .step {
@@ -2241,6 +2252,10 @@
     transform: none;
   }
 
+  .steps::before {
+    clip-path: none;
+  }
+
 }
 
 /* No scripting: never leave reveal targets hidden. */
@@ -2248,6 +2263,10 @@
   .page [data-reveal] {
     opacity: 1;
     transform: none;
+  }
+
+  .steps::before {
+    clip-path: none;
   }
 
 }
